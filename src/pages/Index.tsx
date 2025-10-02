@@ -12,7 +12,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <header className="mb-8 text-center">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -22,7 +22,7 @@ const Index = () => {
               className="h-16 md:h-20 object-contain"
             />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
             REGISTROS FOTOGRÁFICOS
           </h1>
           <p className="text-muted-foreground text-lg">

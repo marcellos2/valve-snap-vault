@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Tesseract from "tesseract.js";
@@ -20,6 +20,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
   const [rotations, setRotations] = useState({ initial: 0, during: 0, final: 0 });
   const [isSaving, setIsSaving] = useState(false);
   const [isExtractingCode, setIsExtractingCode] = useState(false);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const rotatePhoto = (photo: string, currentRotation: number): Promise<string> => {
     return new Promise((resolve) => {
@@ -182,9 +183,38 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
     }
   };
 
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedText(id);
+      toast({
+        title: "Texto copiado!",
+      });
+      setTimeout(() => setCopiedText(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Erro ao copiar texto",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const standardTexts = [
+    {
+      id: "calibration",
+      title: "Origem do Problema > Calibração Vencida",
+      text: "Foi realizado a calibração da válvula de segurança conforme os procedimentos internos normativos, utilizando equipamentos devidamente calibrados e rastreados."
+    },
+    {
+      id: "observations",
+      title: "Observações Apresentadas",
+      text: "Os resultados obtidos confirmam que a válvula atende aos requisitos especificados para seu pleno funcionamento e segurança operacional."
+    }
+  ];
+
   return (
     <div className="space-y-6">
-      <Card className="p-6 bg-card shadow-md">
+      <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 shadow-md">
         <div className="space-y-4">
           <div>
             <Label htmlFor="valveCode">Código da Válvula</Label>
@@ -255,7 +285,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       <Button
         onClick={handleSave}
         disabled={isSaving}
-        className="w-full bg-gradient-to-r from-primary to-primary-dark h-14 text-lg shadow-lg hover:shadow-xl transition-all"
+        className="w-full h-14 text-lg shadow-lg hover:shadow-xl transition-all"
       >
         {isSaving ? (
           <>
@@ -269,6 +299,33 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           </>
         )}
       </Button>
+
+      {/* Seção de Textos Padronizados */}
+      <div className="space-y-4 mt-8">
+        <h3 className="text-lg font-semibold text-foreground">Textos Padronizados</h3>
+        {standardTexts.map((item) => (
+          <Card key={item.id} className="p-4 bg-card/30 backdrop-blur-sm border-border/50">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">{item.title}</h4>
+                <p className="text-sm text-foreground">{item.text}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(item.text, item.id)}
+                className="shrink-0 bg-transparent hover:bg-accent/20"
+              >
+                {copiedText === item.id ? (
+                  <Check className="h-4 w-4 text-primary" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
