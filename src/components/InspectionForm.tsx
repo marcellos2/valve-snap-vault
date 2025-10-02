@@ -127,6 +127,15 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
   };
 
   const handleSave = async () => {
+    if (!valveCode || valveCode.trim() === "") {
+      toast({
+        title: "Atenção",
+        description: "O código da válvula é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!photoInitial && !photoDuring && !photoFinal) {
       toast({
         title: "Atenção",
@@ -217,7 +226,9 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       <Card className="p-6 bg-card/90 backdrop-blur-md border-border/50 shadow-lg">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="valveCode">Código da Válvula</Label>
+            <Label htmlFor="valveCode">
+              Código da Válvula <span className="text-destructive">*</span>
+            </Label>
             <div className="flex gap-2 mt-1">
               <Input
                 id="valveCode"
