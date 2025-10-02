@@ -41,8 +41,8 @@ export const PhotoUploader = ({
 
   return (
     <>
-      <Card className="overflow-hidden bg-card shadow-md hover:shadow-lg transition-shadow">
-        <div className="bg-gradient-to-r from-primary to-primary-dark p-4">
+      <Card className="overflow-hidden bg-card/90 backdrop-blur-md border-border/50 shadow-lg hover:shadow-xl transition-all">
+        <div className="bg-primary p-4">
           <h3 className="font-bold text-lg text-primary-foreground">{title}</h3>
           <p className="text-sm text-primary-foreground/90">{subtitle}</p>
         </div>
@@ -86,7 +86,7 @@ export const PhotoUploader = ({
           <div className="flex gap-2 mt-4">
             <Button
               onClick={() => setShowCamera(true)}
-              className="flex-1 bg-gradient-to-r from-primary to-primary-dark"
+              className="flex-1"
             >
               <Camera className="h-4 w-4 mr-2" />
               Tirar Foto

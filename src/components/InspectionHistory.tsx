@@ -291,7 +291,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
 
   if (records.length === 0) {
     return (
-      <Card className="p-8 text-center bg-muted/50">
+      <Card className="p-8 text-center bg-card/90 backdrop-blur-md border-border/50">
         <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
         <p className="text-muted-foreground">Nenhuma inspeção registrada ainda</p>
       </Card>
@@ -316,14 +316,14 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
       </div>
 
       {filteredRecords.length === 0 ? (
-        <Card className="p-8 text-center bg-muted/50">
+        <Card className="p-8 text-center bg-card/90 backdrop-blur-md border-border/50">
           <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">Nenhum registro encontrado para "{searchTerm}"</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRecords.map((record) => (
-            <Card key={record.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/90 backdrop-blur-md border-border/50">
               <div className="bg-gradient-to-r from-primary to-primary-dark p-4 text-primary-foreground">
                 <div className="flex items-center justify-between">
                   <div>
