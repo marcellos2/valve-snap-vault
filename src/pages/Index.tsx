@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
 import { Separator } from "@/components/ui/separator";
