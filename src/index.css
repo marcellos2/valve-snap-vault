@@ -19,7 +19,7 @@
     --popover-foreground: 0 0% 0%;
 
     /* rgb(207, 14, 14) = hsl(356, 87%, 43%) */
-    --primary: 354 84% 40%;
+    --primary: 356 87% 43%;
     --primary-foreground: 0 0% 100%;
     /* rgb(155, 11, 11) = hsl(0, 87%, 33%) */
     --primary-dark: 0 87% 33%;
@@ -28,7 +28,7 @@
     --secondary: 0 0% 20% / 0.2;
     --secondary-foreground: 0 0% 0%;
 
-    --muted: 0 0% 94% / 0.1;
+    --muted: 0 0% 96% / 0.1;
     --muted-foreground: 0 0% 5%;
 
     /* rgb(155, 11, 11) como accent */
@@ -39,13 +39,13 @@
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 100% / 0.15;
-    --input: 0 0% 100% / 0.1;
+    --input: 0 0% 100% / 0.15;
     --ring: 356 87% 43%;
 
-    --success: 14 71% 45%;
+    --success: 142 71% 45%;
     --warning: 38 92% 50%;
 
-    --radius: 2rem;
+    --radius: 1rem;
     
     /* Gradientes Tecnoiso: rgb(207,14,14) → rgb(155,11,11) → rgb(104,7,7) → rgb(52,4,4) → rgb(0,0,0) */
     --gradient-primary: linear-gradient(135deg, rgb(207, 14, 14), rgb(155, 11, 11));
@@ -144,6 +144,7 @@
   body {
     @apply text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
     /* Gradiente Tecnoiso - rgb(207,14,14) até preto */
     background: linear-gradient(135deg, 
       rgb(207, 14, 14) 0%, 
@@ -159,6 +160,24 @@
   /* Estilos de botões industriais */
   button {
     @apply transition-all duration-300;
+    background: rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  }
+  
+  button:hover {
+    background: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  /* Inputs e campos de texto */
+  input, textarea, select {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: #000000 !important;
+    font-size: 15px;
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: rgba(0, 0, 0, 0.5) !important;
   }
 
   /* Headers com peso industrial */
