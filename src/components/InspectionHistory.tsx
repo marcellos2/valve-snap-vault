@@ -77,14 +77,8 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
   useEffect(() => {
     let filtered = records;
     
-    // Se houver termo de pesquisa, busca em TODOS os registros (ignora filtro de data)
-    if (searchTerm.trim() !== "") {
-      filtered = records.filter((record) =>
-        record.valve_code?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    } 
-    // Se NÃO houver pesquisa, aplica filtro de data
-    else if (selectedDate) {
+    // Filtrar por data selecionada
+    if (selectedDate) {
       filtered = filtered.filter((record) => {
         const recordDate = new Date(record.inspection_date);
         return (
@@ -93,6 +87,13 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
           recordDate.getFullYear() === selectedDate.getFullYear()
         );
       });
+    }
+    
+    // Filtrar por termo de pesquisa
+    if (searchTerm.trim() !== "") {
+      filtered = filtered.filter((record) =>
+        record.valve_code?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
     
     setFilteredRecords(filtered);
