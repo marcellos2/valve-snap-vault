@@ -44,7 +44,8 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
   const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  // Por padrão, seleciona o dia atual
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(true);
 
   const loadRecords = useCallback(async () => {
@@ -315,7 +316,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
 
   if (records.length === 0) {
     return (
-      <Card className="p-8 text-center bg-card/90 backdrop-blur-md border-border/50">
+      <Card className="p-8 text-center bg-card/95 backdrop-blur-md border-border shadow-md">
         <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
         <p className="text-muted-foreground">Nenhuma inspeção registrada ainda</p>
       </Card>
@@ -329,7 +330,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
       </div>
       
       {/* Calendário Transparente com Pesquisa */}
-      <Card className="p-6 bg-card/90 backdrop-blur-md border-border/50 shadow-lg">
+      <Card className="p-6 bg-card/95 backdrop-blur-md border-border shadow-lg">
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -341,7 +342,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
             >
               <Calendar className="mr-2 h-5 w-5" />
               {selectedDate ? (
-                formatDate(selectedDate.toISOString())
+                `Data: ${formatDate(selectedDate.toISOString()).split(' ')[0]}`
               ) : (
                 <span>Selecione uma data para filtrar</span>
               )}
@@ -396,15 +397,19 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
       </Card>
 
       {filteredRecords.length === 0 ? (
-        <Card className="p-8 text-center bg-card/90 backdrop-blur-md border-border/50">
+        <Card className="p-8 text-center bg-card/95 backdrop-blur-md border-border shadow-md">
           <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Nenhum registro encontrado para "{searchTerm}"</p>
+          <p className="text-muted-foreground">
+            {searchTerm ? `Nenhum registro encontrado para "${searchTerm}"` : 
+             selectedDate ? 'Nenhum registro para esta data' : 
+             'Nenhum registro encontrado'}
+          </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRecords.map((record) => (
-            <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/90 backdrop-blur-md border-border/50">
-              <div className="bg-gradient-to-r from-primary to-primary-dark p-4 text-primary-foreground">
+            <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
+              <div className="bg-primary p-4 text-primary-foreground">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-lg">

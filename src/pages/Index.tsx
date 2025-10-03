@@ -19,7 +19,7 @@ const Index = () => {
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${labBackground})` }}
       >
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">

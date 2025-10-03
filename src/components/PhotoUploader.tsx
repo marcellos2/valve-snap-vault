@@ -41,7 +41,7 @@ export const PhotoUploader = ({
 
   return (
     <>
-      <Card className="overflow-hidden bg-card/90 backdrop-blur-md border-border/50 shadow-lg hover:shadow-xl transition-all">
+      <Card className="overflow-hidden bg-card/95 backdrop-blur-md border-border shadow-lg hover:shadow-xl transition-all">
         <div className="bg-primary p-4">
           <h3 className="font-bold text-lg text-primary-foreground">{title}</h3>
           <p className="text-sm text-primary-foreground/90">{subtitle}</p>
@@ -60,7 +60,7 @@ export const PhotoUploader = ({
                   size="icon"
                   variant="secondary"
                   onClick={onRotate}
-                  className="bg-card/90 backdrop-blur-md hover:bg-card shadow-md"
+                  className="bg-white/95 backdrop-blur-md hover:bg-white shadow-md"
                 >
                   <RotateCw className="h-4 w-4 text-foreground" />
                 </Button>

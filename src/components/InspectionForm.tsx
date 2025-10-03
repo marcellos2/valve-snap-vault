@@ -275,7 +275,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       </Button>
 
       {/* Campo de Código da Válvula - Destacado */}
-      <Card className="p-6 bg-card/90 backdrop-blur-md border-primary/50 shadow-lg border-2">
+      <Card className="p-6 bg-card/95 backdrop-blur-md border-primary shadow-lg border-2">
         <div>
           <Label htmlFor="valveCode" className="text-lg">
             Código da Válvula <span className="text-destructive text-xl">*</span>
@@ -312,7 +312,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       <div className="space-y-4 mt-8">
         <h3 className="text-lg font-semibold text-foreground">Textos Padronizados</h3>
         {standardTexts.map((item) => (
-          <Card key={item.id} className="p-4 bg-card/90 backdrop-blur-md border-border/50">
+          <Card key={item.id} className="p-4 bg-card/95 backdrop-blur-md border-border shadow-md">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <h4 className="font-medium text-sm text-muted-foreground mb-2">{item.title}</h4>
