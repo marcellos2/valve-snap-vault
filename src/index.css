@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* Paleta Tecnoiso - rgb(207, 14, 14) até preto */
-    --background: 0 0% 98%;
+    
     --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
