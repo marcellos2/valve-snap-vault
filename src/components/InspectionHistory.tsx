@@ -2,9 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Calendar, FileText, Trash2, Download, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface InspectionRecord {
   id: string;
@@ -41,6 +44,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
   const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isLoading, setIsLoading] = useState(true);
 
   const loadRecords = useCallback(async () => {
@@ -70,15 +74,35 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
   }, [refreshTrigger, loadRecords]);
 
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredRecords(records);
-    } else {
-      const filtered = records.filter((record) =>
+    let filtered = records;
+    
+    // Filtrar por data selecionada
+    if (selectedDate) {
+      filtered = filtered.filter((record) => {
+        const recordDate = new Date(record.inspection_date);
+        return (
+          recordDate.getDate() === selectedDate.getDate() &&
+          recordDate.getMonth() === selectedDate.getMonth() &&
+          recordDate.getFullYear() === selectedDate.getFullYear()
+        );
+      });
+    }
+    
+    // Filtrar por termo de pesquisa
+    if (searchTerm.trim() !== "") {
+      filtered = filtered.filter((record) =>
         record.valve_code?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredRecords(filtered);
     }
-  }, [searchTerm, records]);
+    
+    setFilteredRecords(filtered);
+  }, [searchTerm, selectedDate, records]);
+
+  // Obter datas com registros para destacar no calendário
+  const datesWithRecords = records.map(record => {
+    const date = new Date(record.inspection_date);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  });
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente excluir este registro?")) return;
@@ -304,16 +328,72 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
         <h2 className="text-2xl font-bold text-foreground">Histórico de Inspeções</h2>
       </div>
       
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Pesquisar por código da válvula..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* Calendário Transparente com Pesquisa */}
+      <Card className="p-6 bg-card/90 backdrop-blur-md border-border/50 shadow-lg">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <Calendar className="mr-2 h-5 w-5" />
+              {selectedDate ? (
+                formatDate(selectedDate.toISOString())
+              ) : (
+                <span>Selecione uma data para filtrar</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-card/95 backdrop-blur-md border-border/50" align="start">
+            <CalendarComponent
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              initialFocus
+              className="pointer-events-auto"
+              modifiers={{
+                hasRecords: datesWithRecords,
+              }}
+              modifiersStyles={{
+                hasRecords: {
+                  fontWeight: "bold",
+                  textDecoration: "underline",
+                  color: "hsl(var(--primary))",
+                },
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Barra de Pesquisa dentro do Card do Calendário */}
+        <div className="relative mt-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Pesquisar por código da válvula..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-transparent border-border/50"
+          />
+        </div>
+
+        {/* Botão para limpar filtros */}
+        {(selectedDate || searchTerm) && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSelectedDate(undefined);
+              setSearchTerm("");
+            }}
+            className="w-full mt-3 text-muted-foreground hover:text-foreground"
+          >
+            Limpar filtros
+          </Button>
+        )}
+      </Card>
 
       {filteredRecords.length === 0 ? (
         <Card className="p-8 text-center bg-card/90 backdrop-blur-md border-border/50">

@@ -60,15 +60,15 @@ export const PhotoUploader = ({
                   size="icon"
                   variant="secondary"
                   onClick={onRotate}
-                  className="bg-white/90 hover:bg-white shadow-md"
+                  className="bg-card/90 backdrop-blur-md hover:bg-card shadow-md"
                 >
-                  <RotateCw className="h-4 w-4" />
+                  <RotateCw className="h-4 w-4 text-foreground" />
                 </Button>
                 <Button
                   size="icon"
                   variant="destructive"
                   onClick={onRemove}
-                  className="bg-white/90 hover:bg-white text-destructive shadow-md"
+                  className="shadow-md"
                 >
                   <X className="h-4 w-4" />
                 </Button>

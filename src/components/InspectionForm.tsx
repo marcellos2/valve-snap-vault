@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { PhotoUploader } from "./PhotoUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Save, Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +11,8 @@ import Tesseract from "tesseract.js";
 
 export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
   const { toast } = useToast();
+  const valveCodeRef = useRef<HTMLInputElement>(null);
   const [valveCode, setValveCode] = useState("");
-  const [notes, setNotes] = useState("");
   const [photoInitial, setPhotoInitial] = useState<string | null>(null);
   const [photoDuring, setPhotoDuring] = useState<string | null>(null);
   const [photoFinal, setPhotoFinal] = useState<string | null>(null);
@@ -133,6 +132,11 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
         description: "O código da válvula é obrigatório",
         variant: "destructive",
       });
+      // Scroll e foco no campo de código
+      valveCodeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        valveCodeRef.current?.focus();
+      }, 300);
       return;
     }
 
@@ -161,7 +165,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
         photo_initial_url: photoInitialUrl,
         photo_during_url: photoDuringUrl,
         photo_final_url: photoFinalUrl,
-        notes: notes || null,
+        notes: null,
       });
 
       if (error) throw error;
@@ -173,7 +177,6 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
 
       // Limpar formulário
       setValveCode("");
-      setNotes("");
       setPhotoInitial(null);
       setPhotoDuring(null);
       setPhotoFinal(null);
@@ -223,46 +226,6 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 bg-card/90 backdrop-blur-md border-border/50 shadow-lg">
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="valveCode">
-              Código da Válvula <span className="text-destructive">*</span>
-            </Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                id="valveCode"
-                value={valveCode}
-                onChange={(e) => setValveCode(e.target.value)}
-                placeholder="Ex: VLV-001"
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                onClick={() => photoInitial && extractCodeFromImage(photoInitial)}
-                disabled={!photoInitial || isExtractingCode}
-              >
-                {isExtractingCode ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Detectar"
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Observações</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Insira observações sobre a inspeção..."
-              className="mt-1 min-h-[100px]"
-            />
-          </div>
-        </div>
-      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PhotoUploader
@@ -310,6 +273,40 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           </>
         )}
       </Button>
+
+      {/* Campo de Código da Válvula - Destacado */}
+      <Card className="p-6 bg-card/90 backdrop-blur-md border-primary/50 shadow-lg border-2">
+        <div>
+          <Label htmlFor="valveCode" className="text-lg">
+            Código da Válvula <span className="text-destructive text-xl">*</span>
+          </Label>
+          <div className="flex gap-2 mt-2">
+            <Input
+              ref={valveCodeRef}
+              id="valveCode"
+              value={valveCode}
+              onChange={(e) => setValveCode(e.target.value)}
+              placeholder="Ex: VLV-001"
+              className="flex-1 h-12 text-lg border-primary/30 focus:border-primary"
+            />
+            <Button
+              variant="outline"
+              onClick={() => photoInitial && extractCodeFromImage(photoInitial)}
+              disabled={!photoInitial || isExtractingCode}
+              className="h-12"
+            >
+              {isExtractingCode ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Detectar"
+              )}
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Campo obrigatório para salvar o relatório
+          </p>
+        </div>
+      </Card>
 
       {/* Seção de Textos Padronizados */}
       <div className="space-y-4 mt-8">
