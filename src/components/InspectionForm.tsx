@@ -78,22 +78,18 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           title: "Código detectado!",
           description: `Código da válvula: ${codeMatch[0]}`,
         });
-      } else {
-        toast({
-          title: "Código não encontrado",
-          description: "Insira o código manualmente",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error("Erro ao extrair código:", error);
-      toast({
-        title: "Erro ao ler código",
-        description: "Insira o código manualmente",
-        variant: "destructive",
-      });
     } finally {
       setIsExtractingCode(false);
+    }
+  };
+
+  const handlePhotoInitialChange = async (photo: string | null) => {
+    setPhotoInitial(photo);
+    if (photo && !valveCode) {
+      await extractCodeFromImage(photo);
     }
   };
 
@@ -232,7 +228,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           title="INÍCIO DA INSPEÇÃO"
           subtitle="VÁLVULA NO RECEBIMENTO"
           photo={photoInitial}
-          onPhotoChange={setPhotoInitial}
+          onPhotoChange={handlePhotoInitialChange}
           onRotate={() => handleRotate("initial")}
           onRemove={() => setPhotoInitial(null)}
         />
@@ -280,30 +276,21 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           <Label htmlFor="valveCode" className="text-lg">
             Código da Válvula <span className="text-destructive text-xl">*</span>
           </Label>
-          <div className="flex gap-2 mt-2">
+          <div className="mt-2">
             <Input
               ref={valveCodeRef}
               id="valveCode"
               value={valveCode}
               onChange={(e) => setValveCode(e.target.value)}
               placeholder="Ex: VLV-001"
-              className="flex-1 h-12 text-lg border-primary/30 focus:border-primary"
+              className="h-12 text-lg border-primary/30 focus:border-primary"
+              disabled={isExtractingCode}
             />
-            <Button
-              variant="outline"
-              onClick={() => photoInitial && extractCodeFromImage(photoInitial)}
-              disabled={!photoInitial || isExtractingCode}
-              className="h-12"
-            >
-              {isExtractingCode ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Detectar"
-              )}
-            </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Campo obrigatório para salvar o relatório
+            {isExtractingCode 
+              ? "Detectando código automaticamente..." 
+              : "Campo obrigatório para salvar o relatório"}
           </p>
         </div>
       </Card>
