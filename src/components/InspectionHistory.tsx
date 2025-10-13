@@ -47,13 +47,25 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
   // Por padrão, seleciona o dia atual
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const RECORDS_PER_PAGE = 20;
 
   const loadRecords = useCallback(async () => {
     try {
+      // Calcula a data atual sem hora para filtro inicial
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Busca apenas registros do dia atual por padrão (otimização)
       const { data, error } = await supabase
         .from("inspection_records")
         .select("*")
-        .order("inspection_date", { ascending: false });
+        .gte("inspection_date", today.toISOString())
+        .lt("inspection_date", tomorrow.toISOString())
+        .order("inspection_date", { ascending: false })
+        .limit(RECORDS_PER_PAGE);
 
       if (error) throw error;
       setRecords(data || []);
@@ -74,35 +86,50 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
     loadRecords();
   }, [refreshTrigger, loadRecords]);
 
+  // Busca com filtro de data ou pesquisa
   useEffect(() => {
-    let filtered = records;
-    
-    // Se houver termo de pesquisa, busca em TODOS os registros (ignora filtro de data)
-    if (searchTerm.trim() !== "") {
-      filtered = records.filter((record) =>
-        record.valve_code?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    } 
-    // Se NÃO houver pesquisa, aplica filtro de data
-    else if (selectedDate) {
-      filtered = filtered.filter((record) => {
-        const recordDate = new Date(record.inspection_date);
-        return (
-          recordDate.getDate() === selectedDate.getDate() &&
-          recordDate.getMonth() === selectedDate.getMonth() &&
-          recordDate.getFullYear() === selectedDate.getFullYear()
-        );
-      });
-    }
-    
-    setFilteredRecords(filtered);
-  }, [searchTerm, selectedDate, records]);
+    const loadFilteredRecords = async () => {
+      try {
+        let query = supabase
+          .from("inspection_records")
+          .select("*", { count: 'exact' });
+        
+        // Se houver termo de pesquisa, busca em TODOS os registros (ignora filtro de data)
+        if (searchTerm.trim() !== "") {
+          query = query.ilike("valve_code", `%${searchTerm}%`);
+        } 
+        // Se NÃO houver pesquisa, aplica filtro de data
+        else if (selectedDate) {
+          const startOfDay = new Date(selectedDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(selectedDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          
+          query = query
+            .gte("inspection_date", startOfDay.toISOString())
+            .lte("inspection_date", endOfDay.toISOString());
+        }
+        
+        // Aplica paginação
+        const from = (currentPage - 1) * RECORDS_PER_PAGE;
+        const to = from + RECORDS_PER_PAGE - 1;
+        
+        const { data, error } = await query
+          .order("inspection_date", { ascending: false })
+          .range(from, to);
 
-  // Obter datas com registros para destacar no calendário
-  const datesWithRecords = records.map(record => {
-    const date = new Date(record.inspection_date);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  });
+        if (error) throw error;
+        setFilteredRecords(data || []);
+      } catch (error) {
+        console.error("Erro ao filtrar registros:", error);
+      }
+    };
+
+    loadFilteredRecords();
+  }, [searchTerm, selectedDate, currentPage]);
+
+  // Remover datas com registros do calendário para otimização
+  const datesWithRecords: Date[] = [];
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente excluir este registro?")) return;
@@ -405,75 +432,103 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRecords.map((record) => (
-            <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
-              <div className="bg-primary p-4 text-primary-foreground">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-lg">
-                      {record.valve_code || "Sem código"}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm opacity-90">
-                      <Calendar className="h-4 w-4" />
-                      {formatDate(record.inspection_date)}
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredRecords.map((record) => (
+              <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
+                <div className="bg-primary p-4 text-primary-foreground">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-lg">
+                        {record.valve_code || "Sem código"}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm opacity-90">
+                        <Calendar className="h-4 w-4" />
+                        {formatDate(record.inspection_date)}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDownload(record)}
+                        className="text-primary-foreground hover:bg-white/20"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(record.id)}
+                        className="text-primary-foreground hover:bg-white/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDownload(record)}
-                      className="text-primary-foreground hover:bg-white/20"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDelete(record.id)}
-                      className="text-primary-foreground hover:bg-white/20"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {record.photo_initial_url && (
+                      <img
+                        src={record.photo_initial_url}
+                        alt="Inicial"
+                        className="w-full h-20 object-cover rounded"
+                        loading="lazy"
+                      />
+                    )}
+                    {record.photo_during_url && (
+                      <img
+                        src={record.photo_during_url}
+                        alt="Durante"
+                        className="w-full h-20 object-cover rounded"
+                        loading="lazy"
+                      />
+                    )}
+                    {record.photo_final_url && (
+                      <img
+                        src={record.photo_final_url}
+                        alt="Final"
+                        className="w-full h-20 object-cover rounded"
+                        loading="lazy"
+                      />
+                    )}
                   </div>
-                </div>
-              </div>
 
-              <div className="p-4 space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  {record.photo_initial_url && (
-                    <img
-                      src={record.photo_initial_url}
-                      alt="Inicial"
-                      className="w-full h-20 object-cover rounded"
-                    />
-                  )}
-                  {record.photo_during_url && (
-                    <img
-                      src={record.photo_during_url}
-                      alt="Durante"
-                      className="w-full h-20 object-cover rounded"
-                    />
-                  )}
-                  {record.photo_final_url && (
-                    <img
-                      src={record.photo_final_url}
-                      alt="Final"
-                      className="w-full h-20 object-cover rounded"
-                    />
+                  {record.notes && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {record.notes}
+                    </p>
                   )}
                 </div>
+              </Card>
+            ))}
+          </div>
 
-                {record.notes && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {record.notes}
-                  </p>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+          {/* Controles de Paginação */}
+          {filteredRecords.length === RECORDS_PER_PAGE && (
+            <div className="flex justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <span className="flex items-center px-4 text-sm text-muted-foreground">
+                Página {currentPage}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                disabled={filteredRecords.length < RECORDS_PER_PAGE}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
