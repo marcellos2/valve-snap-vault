@@ -69,15 +69,34 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
         logger: (m) => console.log(m),
       });
       
-      // Extrair código de válvula (assumindo formato comum)
-      const text = result.data.text;
-      const codeMatch = text.match(/[A-Z0-9]{4,}/g);
-      if (codeMatch && codeMatch[0]) {
-        setValveCode(codeMatch[0]);
+      const text = result.data.text.toUpperCase().replace(/\s+/g, " ");
+      console.log("Texto detectado:", text);
+      
+      // Buscar padrões específicos de código de válvula
+      // Padrão 1: VAL seguido de espaço e números (ex: VAL 005)
+      let codeMatch = text.match(/VAL\s*(\d{3,})/);
+      
+      // Padrão 2: VLV seguido de hífen e números (ex: VLV-001)
+      if (!codeMatch) {
+        codeMatch = text.match(/VLV[-\s]*(\d{3,})/);
+      }
+      
+      // Padrão 3: Qualquer sequência alfanumérica de 4+ caracteres
+      if (!codeMatch) {
+        const matches = text.match(/[A-Z]{2,}\s*\d{3,}/);
+        if (matches) codeMatch = matches;
+      }
+      
+      if (codeMatch) {
+        // Formatar o código: manter formato original se tiver VAL/VLV, senão usar o que foi encontrado
+        const detectedCode = codeMatch[0].replace(/\s+/g, " ").trim();
+        setValveCode(detectedCode);
         toast({
           title: "Código detectado!",
-          description: `Código da válvula: ${codeMatch[0]}`,
+          description: `Código da válvula: ${detectedCode}`,
         });
+      } else {
+        console.log("Nenhum código encontrado no padrão esperado");
       }
     } catch (error) {
       console.error("Erro ao extrair código:", error);
