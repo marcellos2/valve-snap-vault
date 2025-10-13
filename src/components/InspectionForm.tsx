@@ -105,10 +105,9 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
     }
   };
 
-  const handlePhotoInitialChange = async (photo: string | null) => {
-    setPhotoInitial(photo);
-    if (photo && !valveCode) {
-      await extractCodeFromImage(photo);
+  const handleDetectCode = async () => {
+    if (photoInitial) {
+      await extractCodeFromImage(photoInitial);
     }
   };
 
@@ -247,7 +246,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           title="INÍCIO DA INSPEÇÃO"
           subtitle="VÁLVULA NO RECEBIMENTO"
           photo={photoInitial}
-          onPhotoChange={handlePhotoInitialChange}
+          onPhotoChange={setPhotoInitial}
           onRotate={() => handleRotate("initial")}
           onRemove={() => setPhotoInitial(null)}
         />
@@ -295,7 +294,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
           <Label htmlFor="valveCode" className="text-lg">
             Código da Válvula <span className="text-destructive text-xl">*</span>
           </Label>
-          <div className="mt-2">
+          <div className="mt-2 flex gap-2">
             <Input
               ref={valveCodeRef}
               id="valveCode"
@@ -305,11 +304,24 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
               className="h-12 text-lg border-primary/30 focus:border-primary"
               disabled={isExtractingCode}
             />
+            <Button
+              onClick={handleDetectCode}
+              disabled={!photoInitial || isExtractingCode}
+              variant="outline"
+              className="h-12 px-6 shrink-0"
+            >
+              {isExtractingCode ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Detectando...
+                </>
+              ) : (
+                "Detectar"
+              )}
+            </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            {isExtractingCode 
-              ? "Detectando código automaticamente..." 
-              : "Campo obrigatório para salvar o relatório"}
+            Campo obrigatório para salvar o relatório
           </p>
         </div>
       </Card>
