@@ -284,7 +284,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       </Button>
 
       {/* Campo de Código da Válvula - Destacado */}
-      <Card className="p-6 bg-card/95 backdrop-blur-md border-primary shadow-lg border-2">
+      <Card className="p-6 bg-card/95 backdrop-blur-md shadow-lg">
         <div>
           <Label htmlFor="valveCode" className="text-lg">
             Código da Válvula <span className="text-xl">*</span>
