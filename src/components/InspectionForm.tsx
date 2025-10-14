@@ -287,7 +287,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       <Card className="p-6 bg-card/95 backdrop-blur-md border-primary shadow-lg border-2">
         <div>
           <Label htmlFor="valveCode" className="text-lg">
-            Código da Válvula <span className="text-destructive text-xl">*</span>
+            Código da Válvula <span className="text-xl">*</span>
           </Label>
           <div className="mt-2">
             <Input
@@ -296,7 +296,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
               value={valveCode}
               onChange={(e) => setValveCode(e.target.value)}
               placeholder="Ex: VLV-001"
-              className="h-12 text-lg border-primary/30 focus:border-primary"
+              className="h-12 text-lg"
             />
           </div>
           <p className="text-sm text-muted-foreground mt-2">

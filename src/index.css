@@ -170,14 +170,26 @@
 
   /* Inputs e campos de texto */
   input, textarea, select {
-    background: rgba(255, 255, 255, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: #000000 !important;
     font-size: 15px;
+    transition: all 0.3s ease;
+  }
+  
+  input:hover, textarea:hover, select:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    outline: none;
   }
   
   input::placeholder, textarea::placeholder {
-    color: rgba(0, 0, 0, 0.5) !important;
+    color: rgba(0, 0, 0, 0.4) !important;
   }
 
   /* Headers com peso industrial */
