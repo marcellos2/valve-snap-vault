@@ -362,11 +362,11 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
             <Button
               variant="outline"
               className={cn(
-                "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20",
+                "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20 h-10",
                 !selectedDate && "text-muted-foreground"
               )}
             >
-              <Calendar className="mr-2 h-5 w-5" />
+              <Calendar className="mr-2 h-4 w-4" />
               {selectedDate ? (
                 `Data: ${formatDate(selectedDate.toISOString()).split(' ')[0]}`
               ) : (
@@ -397,13 +397,13 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
 
         {/* Barra de Pesquisa dentro do Card do Calendário */}
         <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Pesquisar por código da válvula..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-transparent border-border/50"
+            className="pl-10 bg-transparent border-border/50 h-10"
           />
         </div>
 
