@@ -436,7 +436,9 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredRecords.map((record) => (
               <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
-                <div className="bg-primary p-4 text-primary-foreground">
+                <div className="relative bg-primary p-4 text-primary-foreground">
+                  {/* Degradê vermelho para preto no topo */}
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-red-700 to-black"></div>
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-bold text-lg">
