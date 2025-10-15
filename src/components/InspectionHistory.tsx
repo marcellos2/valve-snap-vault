@@ -340,15 +340,6 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
     );
   }
 
-  if (records.length === 0) {
-    return (
-      <Card className="p-8 text-center bg-card/95 backdrop-blur-md border-border shadow-md">
-        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <p className="text-muted-foreground">Nenhuma inspeção registrada ainda</p>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
