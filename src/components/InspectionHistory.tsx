@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import redBlackWaveOverlay from "@/assets/red-black-wave-overlay.png";
 
 interface InspectionRecord {
   id: string;
@@ -469,7 +470,11 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-600 via-red-800 to-transparent opacity-80" />
+                        <img
+                          src={redBlackWaveOverlay}
+                          alt=""
+                          className="absolute top-0 left-0 w-full h-10 object-cover opacity-70 mix-blend-multiply"
+                        />
                       </div>
                     )}
                     {record.photo_during_url && (
@@ -480,7 +485,11 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-600 via-red-800 to-transparent opacity-80" />
+                        <img
+                          src={redBlackWaveOverlay}
+                          alt=""
+                          className="absolute top-0 left-0 w-full h-10 object-cover opacity-70 mix-blend-multiply"
+                        />
                       </div>
                     )}
                     {record.photo_final_url && (
@@ -491,7 +500,11 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-600 via-red-800 to-transparent opacity-80" />
+                        <img
+                          src={redBlackWaveOverlay}
+                          alt=""
+                          className="absolute top-0 left-0 w-full h-10 object-cover opacity-70 mix-blend-multiply"
+                        />
                       </div>
                     )}
                   </div>
