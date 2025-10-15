@@ -428,13 +428,13 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredRecords.map((record) => (
               <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
-                <div className="relative p-4">
+                <div className="relative p-4 h-24">
                   <img
                     src={redBlackWaveOverlay}
                     alt=""
                     className="absolute top-0 left-0 w-full h-full object-cover"
                   />
-                  <div className="relative z-10 flex items-center justify-between">
+                  <div className="relative z-10 flex items-center justify-between h-full">
                     <div>
                       <h3 className="font-bold text-lg text-white drop-shadow-lg">
                         {record.valve_code || "Sem código"}
@@ -468,47 +468,32 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                 <div className="p-4 space-y-3">
                   <div className="grid grid-cols-3 gap-2">
                     {record.photo_initial_url && (
-                      <div className="relative w-full h-20 rounded overflow-hidden">
+                      <div className="w-full h-20 rounded overflow-hidden">
                         <img
                           src={record.photo_initial_url}
                           alt="Inicial"
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <img
-                          src={redBlackWaveOverlay}
-                          alt=""
-                          className="absolute top-0 left-0 w-full h-10 object-cover opacity-70 mix-blend-multiply"
-                        />
                       </div>
                     )}
                     {record.photo_during_url && (
-                      <div className="relative w-full h-20 rounded overflow-hidden">
+                      <div className="w-full h-20 rounded overflow-hidden">
                         <img
                           src={record.photo_during_url}
                           alt="Durante"
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <img
-                          src={redBlackWaveOverlay}
-                          alt=""
-                          className="absolute top-0 left-0 w-full h-10 object-cover opacity-70 mix-blend-multiply"
-                        />
                       </div>
                     )}
                     {record.photo_final_url && (
-                      <div className="relative w-full h-20 rounded overflow-hidden">
+                      <div className="w-full h-20 rounded overflow-hidden">
                         <img
                           src={record.photo_final_url}
                           alt="Final"
                           className="w-full h-full object-cover"
                           loading="lazy"
-                        />
-                        <img
-                          src={redBlackWaveOverlay}
-                          alt=""
-                          className="absolute top-0 left-0 w-full h-10 object-cover opacity-70 mix-blend-multiply"
                         />
                       </div>
                     )}
@@ -524,28 +509,28 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
             ))}
           </div>
 
-          {/* Controles de Paginação */}
-          {filteredRecords.length === RECORDS_PER_PAGE && (
-            <div className="flex justify-center gap-2 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-              <span className="flex items-center px-4 text-sm text-muted-foreground">
-                Página {currentPage}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-                disabled={filteredRecords.length < RECORDS_PER_PAGE}
-              >
-                Próxima
-              </Button>
-            </div>
-          )}
+          {/* Controles de Paginação - Sempre visível quando há registros */}
+          <div className="flex justify-center gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="bg-transparent"
+            >
+              Anterior
+            </Button>
+            <span className="flex items-center px-4 text-sm text-muted-foreground">
+              Página {currentPage}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              disabled={filteredRecords.length < RECORDS_PER_PAGE}
+              className="bg-transparent"
+            >
+              Próxima
+            </Button>
+          </div>
         </>
       )}
     </div>

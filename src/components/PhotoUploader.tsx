@@ -3,6 +3,7 @@ import { Camera, Upload, RotateCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
+import redBlackWaveOverlay from "@/assets/red-black-wave-overlay.png";
 
 interface PhotoUploaderProps {
   title: string;
@@ -42,9 +43,16 @@ export const PhotoUploader = ({
   return (
     <>
       <Card className="overflow-hidden bg-card/95 backdrop-blur-md border-border shadow-lg hover:shadow-xl transition-all">
-        <div className="bg-primary p-4">
-          <h3 className="font-bold text-lg text-primary-foreground">{title}</h3>
-          <p className="text-sm text-primary-foreground/90">{subtitle}</p>
+        <div className="relative h-24 overflow-hidden">
+          <img
+            src={redBlackWaveOverlay}
+            alt=""
+            className="absolute top-0 left-0 w-full h-full object-cover"
+          />
+          <div className="relative z-10 p-4 h-full flex flex-col justify-center">
+            <h3 className="font-bold text-lg text-white drop-shadow-lg">{title}</h3>
+            <p className="text-sm text-white/90 drop-shadow-md">{subtitle}</p>
+          </div>
         </div>
 
         <div className="p-4">
