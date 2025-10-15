@@ -428,13 +428,18 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredRecords.map((record) => (
               <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
-                <div className="bg-primary p-4 text-primary-foreground">
-                  <div className="flex items-center justify-between">
+                <div className="relative p-4">
+                  <img
+                    src={redBlackWaveOverlay}
+                    alt=""
+                    className="absolute top-0 left-0 w-full h-full object-cover"
+                  />
+                  <div className="relative z-10 flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-lg">
+                      <h3 className="font-bold text-lg text-white drop-shadow-lg">
                         {record.valve_code || "Sem código"}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm opacity-90">
+                      <div className="flex items-center gap-2 text-sm text-white/90 drop-shadow-md">
                         <Calendar className="h-4 w-4" />
                         {formatDate(record.inspection_date)}
                       </div>
@@ -444,7 +449,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDownload(record)}
-                        className="text-primary-foreground hover:bg-white/20"
+                        className="text-white hover:bg-white/20"
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -452,7 +457,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(record.id)}
-                        className="text-primary-foreground hover:bg-white/20"
+                        className="text-white hover:bg-white/20"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
