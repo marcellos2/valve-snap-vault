@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, RotateCw, X } from "lucide-react";
+import { Camera, Upload, RotateCw, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
@@ -23,6 +23,8 @@ export const PhotoUploader = ({
   onRemove,
 }: PhotoUploaderProps) => {
   const [showCamera, setShowCamera] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +40,41 @@ export const PhotoUploader = ({
 
   const handleCapture = (imageData: string) => {
     onPhotoChange(imageData);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          onPhotoChange(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
   };
 
   return (
@@ -83,10 +120,30 @@ export const PhotoUploader = ({
               </div>
             </div>
           ) : (
-            <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <Camera className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Nenhuma foto</p>
+            <div 
+              className={`h-64 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all cursor-pointer ${
+                isDragging 
+                  ? 'border-primary bg-primary/10 scale-105' 
+                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+              }`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="text-center p-4">
+                <Upload className={`h-12 w-12 mx-auto mb-2 transition-colors ${
+                  isDragging ? 'text-primary' : 'text-muted-foreground'
+                }`} />
+                <p className={`text-sm font-medium transition-colors ${
+                  isDragging ? 'text-primary' : 'text-muted-foreground'
+                }`}>
+                  {isDragging ? 'Solte a imagem aqui' : 'Arraste uma imagem ou clique'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JPG, PNG ou WEBP
+                </p>
               </div>
             </div>
           )}
