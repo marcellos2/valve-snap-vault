@@ -462,28 +462,37 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                 <div className="p-4 space-y-3">
                   <div className="grid grid-cols-3 gap-2">
                     {record.photo_initial_url && (
-                      <img
-                        src={record.photo_initial_url}
-                        alt="Inicial"
-                        className="w-full h-20 object-cover rounded"
-                        loading="lazy"
-                      />
+                      <div className="relative w-full h-20 rounded overflow-hidden">
+                        <img
+                          src={record.photo_initial_url}
+                          alt="Inicial"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-600 via-red-800 to-transparent opacity-80" />
+                      </div>
                     )}
                     {record.photo_during_url && (
-                      <img
-                        src={record.photo_during_url}
-                        alt="Durante"
-                        className="w-full h-20 object-cover rounded"
-                        loading="lazy"
-                      />
+                      <div className="relative w-full h-20 rounded overflow-hidden">
+                        <img
+                          src={record.photo_during_url}
+                          alt="Durante"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-600 via-red-800 to-transparent opacity-80" />
+                      </div>
                     )}
                     {record.photo_final_url && (
-                      <img
-                        src={record.photo_final_url}
-                        alt="Final"
-                        className="w-full h-20 object-cover rounded"
-                        loading="lazy"
-                      />
+                      <div className="relative w-full h-20 rounded overflow-hidden">
+                        <img
+                          src={record.photo_final_url}
+                          alt="Final"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-600 via-red-800 to-transparent opacity-80" />
+                      </div>
                     )}
                   </div>
 
