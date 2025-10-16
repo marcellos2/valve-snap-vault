@@ -23,6 +23,7 @@ export type Database = {
           photo_during_url: string | null
           photo_final_url: string | null
           photo_initial_url: string | null
+          status: string | null
           updated_at: string
           valve_code: string | null
         }
@@ -34,6 +35,7 @@ export type Database = {
           photo_during_url?: string | null
           photo_final_url?: string | null
           photo_initial_url?: string | null
+          status?: string | null
           updated_at?: string
           valve_code?: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           photo_during_url?: string | null
           photo_final_url?: string | null
           photo_initial_url?: string | null
+          status?: string | null
           updated_at?: string
           valve_code?: string | null
         }

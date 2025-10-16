@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Calendar, FileText, Trash2, Download, Search } from "lucide-react";
+import { Calendar, FileText, Trash2, Download, Search, Edit, CheckCircle2, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,6 +18,7 @@ interface InspectionRecord {
   photo_during_url: string | null;
   photo_final_url: string | null;
   notes: string | null;
+  status: 'em_andamento' | 'concluido';
 }
 
 // Função auxiliar para formatar data sem date-fns
@@ -40,7 +41,13 @@ const formatDateForFilename = (dateString: string): string => {
   return `${day}-${month}-${year}`;
 };
 
-export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }) => {
+export const InspectionHistory = ({ 
+  refreshTrigger, 
+  onEditRecord 
+}: { 
+  refreshTrigger: number;
+  onEditRecord?: (record: InspectionRecord) => void;
+}) => {
   const { toast } = useToast();
   const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
@@ -69,8 +76,8 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
         .limit(RECORDS_PER_PAGE);
 
       if (error) throw error;
-      setRecords(data || []);
-      setFilteredRecords(data || []);
+      setRecords((data || []) as InspectionRecord[]);
+      setFilteredRecords((data || []) as InspectionRecord[]);
     } catch (error) {
       console.error("Erro ao carregar histórico:", error);
       toast({
@@ -120,7 +127,7 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
           .range(from, to);
 
         if (error) throw error;
-        setFilteredRecords(data || []);
+        setFilteredRecords((data || []) as InspectionRecord[]);
       } catch (error) {
         console.error("Erro ao filtrar registros:", error);
       }
@@ -445,6 +452,17 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      {record.status === 'em_andamento' && onEditRecord && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onEditRecord(record)}
+                          className="text-white hover:bg-white/20"
+                          title="Continuar inspeção"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"
@@ -466,6 +484,28 @@ export const InspectionHistory = ({ refreshTrigger }: { refreshTrigger: number }
                 </div>
 
                 <div className="p-4 space-y-3">
+                  {/* Indicador de Progresso */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {record.status === 'concluido' ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          <span className="text-sm font-medium text-green-500">Completo</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="h-4 w-4 text-yellow-500" />
+                          <span className="text-sm font-medium text-yellow-500">Em andamento</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <div className={`h-2 w-2 rounded-full ${record.photo_initial_url ? 'bg-green-500' : 'bg-muted'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_during_url ? 'bg-green-500' : 'bg-muted'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_final_url ? 'bg-green-500' : 'bg-muted'}`} />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     {record.photo_initial_url && (
                       <div className="w-full h-20 rounded overflow-hidden">

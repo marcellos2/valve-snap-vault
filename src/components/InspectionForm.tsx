@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { PhotoUploader } from "./PhotoUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,40 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Tesseract from "tesseract.js";
 
-export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
+interface InspectionFormProps {
+  onSaved: () => void;
+  editingRecord?: {
+    id: string;
+    valve_code: string | null;
+    photo_initial_url: string | null;
+    photo_during_url: string | null;
+    photo_final_url: string | null;
+    status: 'em_andamento' | 'concluido';
+  } | null;
+  onCancelEdit?: () => void;
+}
+
+export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: InspectionFormProps) => {
   const { toast } = useToast();
   const valveCodeRef = useRef<HTMLInputElement>(null);
-  const [valveCode, setValveCode] = useState("");
-  const [photoInitial, setPhotoInitial] = useState<string | null>(null);
-  const [photoDuring, setPhotoDuring] = useState<string | null>(null);
-  const [photoFinal, setPhotoFinal] = useState<string | null>(null);
+  const [valveCode, setValveCode] = useState(editingRecord?.valve_code || "");
+  const [photoInitial, setPhotoInitial] = useState<string | null>(editingRecord?.photo_initial_url || null);
+  const [photoDuring, setPhotoDuring] = useState<string | null>(editingRecord?.photo_during_url || null);
+  const [photoFinal, setPhotoFinal] = useState<string | null>(editingRecord?.photo_final_url || null);
   const [rotations, setRotations] = useState({ initial: 0, during: 0, final: 0 });
   const [isSaving, setIsSaving] = useState(false);
   const [isExtractingCode, setIsExtractingCode] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  // Atualizar o formulário quando editingRecord mudar
+  useEffect(() => {
+    if (editingRecord) {
+      setValveCode(editingRecord.valve_code || "");
+      setPhotoInitial(editingRecord.photo_initial_url);
+      setPhotoDuring(editingRecord.photo_during_url);
+      setPhotoFinal(editingRecord.photo_final_url);
+    }
+  }, [editingRecord]);
 
   const rotatePhoto = (photo: string, currentRotation: number): Promise<string> => {
     return new Promise((resolve) => {
@@ -227,13 +250,43 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       console.log("All photos uploaded successfully");
       console.log("Photo URLs:", { photoInitialUrl, photoDuringUrl, photoFinalUrl });
 
-      const { error } = await supabase.from("inspection_records").insert({
-        valve_code: valveCode || null,
-        photo_initial_url: photoInitialUrl,
-        photo_during_url: photoDuringUrl,
-        photo_final_url: photoFinalUrl,
-        notes: null,
-      });
+      // Calcular status baseado nas fotos presentes
+      const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
+      const status = hasAllPhotos ? 'concluido' : 'em_andamento';
+
+      let error;
+      
+      if (editingRecord) {
+        // Atualizar registro existente
+        const updateData: any = {
+          valve_code: valveCode || null,
+          status: status,
+        };
+        
+        // Apenas atualizar URLs de fotos se foram fornecidas novas fotos
+        if (photoInitialUrl) updateData.photo_initial_url = photoInitialUrl;
+        if (photoDuringUrl) updateData.photo_during_url = photoDuringUrl;
+        if (photoFinalUrl) updateData.photo_final_url = photoFinalUrl;
+
+        const result = await supabase
+          .from("inspection_records")
+          .update(updateData)
+          .eq("id", editingRecord.id);
+        
+        error = result.error;
+      } else {
+        // Criar novo registro
+        const result = await supabase.from("inspection_records").insert({
+          valve_code: valveCode || null,
+          photo_initial_url: photoInitialUrl,
+          photo_during_url: photoDuringUrl,
+          photo_final_url: photoFinalUrl,
+          notes: null,
+          status: status,
+        });
+        
+        error = result.error;
+      }
 
       if (error) {
         console.error("Database insert error:", error);
@@ -242,9 +295,15 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
 
       console.log("Record saved successfully");
 
+      const allPhotosPresent = (photoInitialUrl || editingRecord?.photo_initial_url) && 
+                               (photoDuringUrl || editingRecord?.photo_during_url) && 
+                               (photoFinalUrl || editingRecord?.photo_final_url);
+
       toast({
         title: "Sucesso!",
-        description: "Inspeção salva com sucesso",
+        description: allPhotosPresent 
+          ? "Inspeção concluída com sucesso" 
+          : "Inspeção salva. Você pode adicionar as fotos restantes depois",
       });
 
       // Limpar formulário
@@ -253,6 +312,10 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       setPhotoDuring(null);
       setPhotoFinal(null);
       setRotations({ initial: 0, during: 0, final: 0 });
+      
+      if (onCancelEdit) {
+        onCancelEdit();
+      }
       
       onSaved();
     } catch (error) {
@@ -298,6 +361,18 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
 
   return (
     <div className="space-y-6">
+      <Card className="p-6 glass-card animate-fade-in">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-foreground">
+            {editingRecord ? "Continuar Inspeção" : "Nova Inspeção"}
+          </h2>
+          {editingRecord && onCancelEdit && (
+            <Button variant="ghost" onClick={onCancelEdit}>
+              Cancelar
+            </Button>
+          )}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PhotoUploader
@@ -330,7 +405,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
 
       <Button
         onClick={handleSave}
-        disabled={isSaving}
+        disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
         className="w-full h-14 text-lg shadow-lg hover:shadow-xl transition-all"
       >
         {isSaving ? (
@@ -341,10 +416,16 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
         ) : (
           <>
             <Save className="mr-2 h-5 w-5" />
-            Salvar Relatório
+            {editingRecord ? "Atualizar Inspeção" : "Salvar Relatório"}
           </>
         )}
       </Button>
+      
+      {!editingRecord && (photoInitial || photoDuring || photoFinal) && (
+        <p className="text-sm text-muted-foreground text-center mt-2">
+          💡 Você pode salvar com fotos parciais e adicionar as restantes depois
+        </p>
+      )}
 
       {/* Campo de Código da Válvula - Destacado */}
       <Card className="p-6 bg-card/95 backdrop-blur-md shadow-lg">

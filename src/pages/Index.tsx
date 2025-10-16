@@ -7,9 +7,21 @@ import labBackground from "@/assets/lab-background.jpg";
 
 const Index = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
 
   const handleSaved = () => {
     setRefreshTrigger((prev) => prev + 1);
+    setEditingRecord(null);
+  };
+
+  const handleEditRecord = (record: any) => {
+    setEditingRecord(record);
+    // Scroll suave para o formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRecord(null);
   };
 
   return (
@@ -40,11 +52,18 @@ const Index = () => {
         </header>
 
         <div className="space-y-8">
-          <InspectionForm onSaved={handleSaved} />
+          <InspectionForm 
+            onSaved={handleSaved} 
+            editingRecord={editingRecord}
+            onCancelEdit={handleCancelEdit}
+          />
 
           <Separator className="my-8" />
 
-          <InspectionHistory refreshTrigger={refreshTrigger} />
+          <InspectionHistory 
+            refreshTrigger={refreshTrigger}
+            onEditRecord={handleEditRecord}
+          />
         </div>
       </div>
     </div>
