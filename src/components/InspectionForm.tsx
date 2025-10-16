@@ -108,7 +108,17 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
 
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
     try {
+      if (!photoData) {
+        console.error("photoData is null or undefined");
+        return null;
+      }
+
       const base64Data = photoData.split(",")[1];
+      if (!base64Data) {
+        console.error("Invalid base64 data");
+        return null;
+      }
+
       const byteCharacters = atob(base64Data);
       const byteArray = new Uint8Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -116,12 +126,24 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       }
       const blob = new Blob([byteArray], { type: "image/jpeg" });
 
-      const filePath = `${Date.now()}-${fileName}.jpg`;
-      const { error } = await supabase.storage
+      // Use a unique filename with timestamp and random string
+      const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}.jpg`;
+      
+      console.log(`Uploading ${fileName} to ${filePath}...`);
+      
+      const { error, data: uploadData } = await supabase.storage
         .from("valve-photos")
-        .upload(filePath, blob);
+        .upload(filePath, blob, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error(`Error uploading ${fileName}:`, error);
+        throw error;
+      }
+
+      console.log(`Successfully uploaded ${fileName}`);
 
       const { data } = supabase.storage
         .from("valve-photos")
@@ -130,6 +152,11 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       return data.publicUrl;
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
+      toast({
+        title: "Erro no upload",
+        description: `Falha ao enviar foto ${fileName}`,
+        variant: "destructive",
+      });
       return null;
     }
   };
@@ -161,13 +188,44 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
     setIsSaving(true);
 
     try {
+      console.log("Starting save process...");
+      console.log("Photos present:", { 
+        initial: !!photoInitial, 
+        during: !!photoDuring, 
+        final: !!photoFinal 
+      });
+
       let photoInitialUrl = null;
       let photoDuringUrl = null;
       let photoFinalUrl = null;
 
-      if (photoInitial) photoInitialUrl = await uploadPhoto(photoInitial, "initial");
-      if (photoDuring) photoDuringUrl = await uploadPhoto(photoDuring, "during");
-      if (photoFinal) photoFinalUrl = await uploadPhoto(photoFinal, "final");
+      // Upload photos sequentially with error handling
+      if (photoInitial) {
+        console.log("Uploading initial photo...");
+        photoInitialUrl = await uploadPhoto(photoInitial, "initial");
+        if (!photoInitialUrl) {
+          throw new Error("Falha ao enviar foto inicial");
+        }
+      }
+      
+      if (photoDuring) {
+        console.log("Uploading during photo...");
+        photoDuringUrl = await uploadPhoto(photoDuring, "during");
+        if (!photoDuringUrl) {
+          throw new Error("Falha ao enviar foto durante");
+        }
+      }
+      
+      if (photoFinal) {
+        console.log("Uploading final photo...");
+        photoFinalUrl = await uploadPhoto(photoFinal, "final");
+        if (!photoFinalUrl) {
+          throw new Error("Falha ao enviar foto final");
+        }
+      }
+
+      console.log("All photos uploaded successfully");
+      console.log("Photo URLs:", { photoInitialUrl, photoDuringUrl, photoFinalUrl });
 
       const { error } = await supabase.from("inspection_records").insert({
         valve_code: valveCode || null,
@@ -177,7 +235,12 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
         notes: null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database insert error:", error);
+        throw error;
+      }
+
+      console.log("Record saved successfully");
 
       toast({
         title: "Sucesso!",
@@ -196,7 +259,7 @@ export const InspectionForm = ({ onSaved }: { onSaved: () => void }) => {
       console.error("Erro ao salvar:", error);
       toast({
         title: "Erro",
-        description: "Falha ao salvar inspeção",
+        description: error instanceof Error ? error.message : "Falha ao salvar inspeção",
         variant: "destructive",
       });
     } finally {

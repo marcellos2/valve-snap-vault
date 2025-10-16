@@ -40,6 +40,7 @@ export const PhotoUploader = ({
 
   const handleCapture = (imageData: string) => {
     onPhotoChange(imageData);
+    setShowCamera(false);
   };
 
   const handleDragEnter = (e: React.DragEvent) => {

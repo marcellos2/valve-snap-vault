@@ -40,6 +40,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
 
   const switchCamera = () => {
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+    setCapturedImage(null); // Reset captured image when switching cameras
   };
 
   return (
