@@ -121,10 +121,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       else if (type === "during") setPhotoDuring(rotated);
       else setPhotoFinal(rotated);
       
-      toast({
-        title: "Foto rotacionada",
-        description: "A foto foi rotacionada com sucesso",
-      });
     } catch (error) {
       console.error("Erro ao rotacionar foto:", error);
       toast({
