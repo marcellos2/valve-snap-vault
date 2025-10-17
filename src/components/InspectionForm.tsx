@@ -45,8 +45,14 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   }, [editingRecord]);
 
   const rotatePhoto = (photo: string, currentRotation: number): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
+      
+      // Se for URL externa (Supabase), precisamos do crossOrigin
+      if (photo.startsWith('http')) {
+        img.crossOrigin = "anonymous";
+      }
+      
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
@@ -66,8 +72,38 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         ctx.rotate((newRotation * Math.PI) / 180);
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
-        resolve(canvas.toDataURL("image/jpeg"));
+        resolve(canvas.toDataURL("image/jpeg", 0.95));
       };
+      
+      img.onerror = (error) => {
+        console.error("Erro ao carregar imagem para rotação:", error);
+        // Tentar novamente sem crossOrigin
+        const img2 = new Image();
+        img2.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve(photo);
+
+          const newRotation = (currentRotation + 90) % 360;
+
+          if (newRotation === 90 || newRotation === 270) {
+            canvas.width = img2.height;
+            canvas.height = img2.width;
+          } else {
+            canvas.width = img2.width;
+            canvas.height = img2.height;
+          }
+
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((newRotation * Math.PI) / 180);
+          ctx.drawImage(img2, -img2.width / 2, -img2.height / 2);
+
+          resolve(canvas.toDataURL("image/jpeg", 0.95));
+        };
+        img2.onerror = () => reject(error);
+        img2.src = photo;
+      };
+      
       img.src = photo;
     });
   };
@@ -77,12 +113,26 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     const photo = photoMap[type];
     if (!photo) return;
 
-    const rotated = await rotatePhoto(photo, rotations[type]);
-    setRotations((prev) => ({ ...prev, [type]: (prev[type] + 90) % 360 }));
+    try {
+      const rotated = await rotatePhoto(photo, rotations[type]);
+      setRotations((prev) => ({ ...prev, [type]: (prev[type] + 90) % 360 }));
 
-    if (type === "initial") setPhotoInitial(rotated);
-    else if (type === "during") setPhotoDuring(rotated);
-    else setPhotoFinal(rotated);
+      if (type === "initial") setPhotoInitial(rotated);
+      else if (type === "during") setPhotoDuring(rotated);
+      else setPhotoFinal(rotated);
+      
+      toast({
+        title: "Foto rotacionada",
+        description: "A foto foi rotacionada com sucesso",
+      });
+    } catch (error) {
+      console.error("Erro ao rotacionar foto:", error);
+      toast({
+        title: "Erro ao rotacionar",
+        description: "Não foi possível rotacionar a foto. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const extractCodeFromImage = async (imageData: string) => {
