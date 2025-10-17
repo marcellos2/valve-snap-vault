@@ -452,13 +452,13 @@ export const InspectionHistory = ({
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {record.status === 'em_andamento' && onEditRecord && (
+                      {onEditRecord && (
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={() => onEditRecord(record)}
                           className="text-white hover:bg-white/20"
-                          title="Continuar inspeção"
+                          title="Editar inspeção"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -500,9 +500,9 @@ export const InspectionHistory = ({
                       )}
                     </div>
                     <div className="flex gap-1">
-                      <div className={`h-2 w-2 rounded-full ${record.photo_initial_url ? 'bg-green-500' : 'bg-muted'}`} />
-                      <div className={`h-2 w-2 rounded-full ${record.photo_during_url ? 'bg-green-500' : 'bg-muted'}`} />
-                      <div className={`h-2 w-2 rounded-full ${record.photo_final_url ? 'bg-green-500' : 'bg-muted'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_initial_url ? 'bg-white' : 'bg-white/30'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_during_url ? 'bg-white' : 'bg-white/30'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_final_url ? 'bg-white' : 'bg-white/30'}`} />
                     </div>
                   </div>
 

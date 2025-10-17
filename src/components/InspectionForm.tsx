@@ -218,33 +218,44 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         final: !!photoFinal 
       });
 
-      let photoInitialUrl = null;
-      let photoDuringUrl = null;
-      let photoFinalUrl = null;
+      // Manter URLs antigas se estiver editando
+      let photoInitialUrl = editingRecord?.photo_initial_url || null;
+      let photoDuringUrl = editingRecord?.photo_during_url || null;
+      let photoFinalUrl = editingRecord?.photo_final_url || null;
 
-      // Upload photos sequentially with error handling
-      if (photoInitial) {
+      // Upload apenas fotos novas (base64)
+      // Se a foto já é uma URL do storage, não fazer upload novamente
+      if (photoInitial && photoInitial.startsWith('data:')) {
         console.log("Uploading initial photo...");
-        photoInitialUrl = await uploadPhoto(photoInitial, "initial");
-        if (!photoInitialUrl) {
+        const uploadedUrl = await uploadPhoto(photoInitial, "initial");
+        if (!uploadedUrl) {
           throw new Error("Falha ao enviar foto inicial");
         }
+        photoInitialUrl = uploadedUrl;
+      } else if (photoInitial) {
+        photoInitialUrl = photoInitial; // Manter URL existente
       }
       
-      if (photoDuring) {
+      if (photoDuring && photoDuring.startsWith('data:')) {
         console.log("Uploading during photo...");
-        photoDuringUrl = await uploadPhoto(photoDuring, "during");
-        if (!photoDuringUrl) {
+        const uploadedUrl = await uploadPhoto(photoDuring, "during");
+        if (!uploadedUrl) {
           throw new Error("Falha ao enviar foto durante");
         }
+        photoDuringUrl = uploadedUrl;
+      } else if (photoDuring) {
+        photoDuringUrl = photoDuring; // Manter URL existente
       }
       
-      if (photoFinal) {
+      if (photoFinal && photoFinal.startsWith('data:')) {
         console.log("Uploading final photo...");
-        photoFinalUrl = await uploadPhoto(photoFinal, "final");
-        if (!photoFinalUrl) {
+        const uploadedUrl = await uploadPhoto(photoFinal, "final");
+        if (!uploadedUrl) {
           throw new Error("Falha ao enviar foto final");
         }
+        photoFinalUrl = uploadedUrl;
+      } else if (photoFinal) {
+        photoFinalUrl = photoFinal; // Manter URL existente
       }
 
       console.log("All photos uploaded successfully");
@@ -257,20 +268,16 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       let error;
       
       if (editingRecord) {
-        // Atualizar registro existente
-        const updateData: any = {
-          valve_code: valveCode || null,
-          status: status,
-        };
-        
-        // Apenas atualizar URLs de fotos se foram fornecidas novas fotos
-        if (photoInitialUrl) updateData.photo_initial_url = photoInitialUrl;
-        if (photoDuringUrl) updateData.photo_during_url = photoDuringUrl;
-        if (photoFinalUrl) updateData.photo_final_url = photoFinalUrl;
-
+        // Atualizar registro existente - sempre atualizar todas as URLs
         const result = await supabase
           .from("inspection_records")
-          .update(updateData)
+          .update({
+            valve_code: valveCode || null,
+            photo_initial_url: photoInitialUrl,
+            photo_during_url: photoDuringUrl,
+            photo_final_url: photoFinalUrl,
+            status: status,
+          })
           .eq("id", editingRecord.id);
         
         error = result.error;
