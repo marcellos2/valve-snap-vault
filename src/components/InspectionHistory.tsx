@@ -52,9 +52,11 @@ export const InspectionHistory = ({
   const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  // Filtro de período: data inicial e final
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  // Filtro de período usando DateRange
+  const [dateRange, setDateRange] = useState<{ from: Date; to?: Date }>({
+    from: new Date(),
+    to: new Date()
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const RECORDS_PER_PAGE = 20;
@@ -108,25 +110,27 @@ export const InspectionHistory = ({
           query = query.ilike("valve_code", `%${searchTerm}%`);
         } 
         // Se NÃO houver pesquisa, aplica filtro de período
-        else if (startDate && endDate) {
-          const start = new Date(startDate);
+        else if (dateRange?.from) {
+          const start = new Date(dateRange.from);
           start.setHours(0, 0, 0, 0);
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
           
-          query = query
-            .gte("inspection_date", start.toISOString())
-            .lte("inspection_date", end.toISOString());
-        } else if (startDate) {
-          // Se só tiver data inicial, busca do dia inicial em diante
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          query = query.gte("inspection_date", start.toISOString());
-        } else if (endDate) {
-          // Se só tiver data final, busca até o dia final
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          query = query.lte("inspection_date", end.toISOString());
+          // Se tiver data final, filtra o intervalo
+          if (dateRange.to) {
+            const end = new Date(dateRange.to);
+            end.setHours(23, 59, 59, 999);
+            
+            query = query
+              .gte("inspection_date", start.toISOString())
+              .lte("inspection_date", end.toISOString());
+          } else {
+            // Se só tiver data inicial, busca apenas esse dia
+            const end = new Date(start);
+            end.setHours(23, 59, 59, 999);
+            
+            query = query
+              .gte("inspection_date", start.toISOString())
+              .lte("inspection_date", end.toISOString());
+          }
         }
         
         // Aplica paginação
@@ -145,7 +149,7 @@ export const InspectionHistory = ({
     };
 
     loadFilteredRecords();
-  }, [searchTerm, startDate, endDate, currentPage]);
+  }, [searchTerm, dateRange, currentPage]);
 
   // Remover datas com registros do calendário para otimização
   const datesWithRecords: Date[] = [];
@@ -368,75 +372,40 @@ export const InspectionHistory = ({
       {/* Filtro de Período com Pesquisa */}
       <Card className="p-6 bg-card/95 backdrop-blur-md border-border shadow-lg">
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Data Inicial */}
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Data Inicial
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20 h-10",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {startDate ? (
-                      formatDate(startDate.toISOString()).split(' ')[0]
-                    ) : (
-                      <span>Selecione a data inicial</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-card/95 backdrop-blur-md border-border/50" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Data Final */}
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Data Final
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20 h-10",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {endDate ? (
-                      formatDate(endDate.toISOString()).split(' ')[0]
-                    ) : (
-                      <span>Selecione a data final</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-card/95 backdrop-blur-md border-border/50" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20 h-10",
+                  !dateRange && "text-muted-foreground"
+                )}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <>
+                      {formatDate(dateRange.from.toISOString()).split(' ')[0]} até {formatDate(dateRange.to.toISOString()).split(' ')[0]}
+                    </>
+                  ) : (
+                    formatDate(dateRange.from.toISOString()).split(' ')[0]
+                  )
+                ) : (
+                  <span>Selecione o período</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-card/95 backdrop-blur-md border-border/50" align="start">
+              <CalendarComponent
+                mode="range"
+                selected={dateRange}
+                onSelect={(range: any) => setDateRange(range)}
+                initialFocus
+                className="pointer-events-auto"
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
 
           {/* Barra de Pesquisa */}
           <div className="relative">
@@ -451,12 +420,11 @@ export const InspectionHistory = ({
           </div>
 
           {/* Botão para limpar filtros */}
-          {(startDate || endDate || searchTerm) && (
+          {(dateRange || searchTerm) && (
             <Button
               variant="ghost"
               onClick={() => {
-                setStartDate(undefined);
-                setEndDate(undefined);
+                setDateRange({ from: new Date(), to: new Date() });
                 setSearchTerm("");
               }}
               className="w-full text-muted-foreground hover:text-foreground"
@@ -472,7 +440,7 @@ export const InspectionHistory = ({
           <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">
             {searchTerm ? `Nenhum registro encontrado para "${searchTerm}"` : 
-             (startDate || endDate) ? 'Nenhum registro para este período' : 
+             dateRange ? 'Nenhum registro para este período' : 
              'Nenhum registro encontrado'}
           </p>
         </Card>
