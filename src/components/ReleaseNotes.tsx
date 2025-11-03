@@ -28,7 +28,7 @@ export const ReleaseNotes = () => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] bg-white border-gray-200">
+      <DialogContent className="sm:max-w-[500px] bg-white border-gray-800">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2 text-gray-900">
             <CheckCircle2 className="h-6 w-6 text-blue-600" />
@@ -70,7 +70,7 @@ export const ReleaseNotes = () => {
           </div>
         </div>
 
-        <Button onClick={handleClose} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+        <Button onClick={handleClose} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
           Entendi, vamos começar!
         </Button>
       </DialogContent>
