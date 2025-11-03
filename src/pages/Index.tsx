@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
+import { ReleaseNotes } from "@/components/ReleaseNotes";
 import { Separator } from "@/components/ui/separator";
 import tecnoiso from "@/assets/tecnoiso-logo.png";
 import labBackground from "@/assets/lab-background.jpg";
@@ -26,6 +27,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <ReleaseNotes />
+      
       {/* Background Image with Overlay */}
       <div 
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
