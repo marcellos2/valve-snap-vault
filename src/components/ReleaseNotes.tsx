@@ -70,7 +70,7 @@ export const ReleaseNotes = () => {
           </div>
         </div>
 
-        <Button onClick={handleClose} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
+        <Button onClick={handleClose} className="w-full">
           Entendi, vamos começar!
         </Button>
       </DialogContent>

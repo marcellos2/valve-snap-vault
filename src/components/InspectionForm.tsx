@@ -414,16 +414,13 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-foreground">
-          {editingRecord ? "Continuar Inspeção" : "Nova Inspeção"}
-        </h2>
-        {editingRecord && onCancelEdit && (
+      {editingRecord && onCancelEdit && (
+        <div className="flex items-center justify-end mb-6">
           <Button variant="ghost" onClick={onCancelEdit}>
             Cancelar
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PhotoUploader
