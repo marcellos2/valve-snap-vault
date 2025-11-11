@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import redBlackWaveOverlay from "@/assets/red-black-wave-overlay.png";
 
 interface InspectionRecord {
   id: string;
@@ -363,20 +364,21 @@ export const InspectionHistory = ({
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-light tracking-wider text-white uppercase">
-        Histórico de Inspeções
-      </h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Histórico de Inspeções</h2>
+      </div>
       
-      <Card className="p-6 bg-black border border-white/10">
+      {/* Filtro de Período com Pesquisa */}
+      <Card className="p-6 bg-card/95 backdrop-blur-md border-border shadow-lg">
         <div className="space-y-4">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left h-11 text-sm tracking-wide bg-black hover:bg-white/5 border-white/10 hover:border-white/20 text-white",
-                  !dateRange && "text-white/40"
+                  "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20 h-10",
+                  !dateRange && "text-muted-foreground"
                 )}
               >
                 <Calendar className="mr-2 h-4 w-4" />
@@ -393,7 +395,7 @@ export const InspectionHistory = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-black border-white/20" align="start">
+            <PopoverContent className="w-auto p-0 bg-card/95 backdrop-blur-md border-border/50" align="start">
               <CalendarComponent
                 mode="range"
                 selected={dateRange}
@@ -405,17 +407,19 @@ export const InspectionHistory = ({
             </PopoverContent>
           </Popover>
 
+          {/* Barra de Pesquisa */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Pesquisar por código da válvula..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 bg-black border-white/10 focus:border-white/30 text-white placeholder:text-white/30"
+              className="pl-10 bg-transparent border-border/50 h-10"
             />
           </div>
 
+          {/* Botão para limpar filtros */}
           {(dateRange || searchTerm) && (
             <Button
               variant="ghost"
@@ -423,18 +427,18 @@ export const InspectionHistory = ({
                 setDateRange({ from: new Date(), to: new Date() });
                 setSearchTerm("");
               }}
-              className="w-full text-xs tracking-wider text-white/40 hover:text-white hover:bg-white/5"
+              className="w-full text-muted-foreground hover:text-foreground"
             >
-              LIMPAR FILTROS
+              Limpar filtros
             </Button>
           )}
         </div>
       </Card>
 
       {filteredRecords.length === 0 ? (
-        <Card className="p-12 text-center bg-black border border-white/10">
-          <FileText className="h-12 w-12 mx-auto mb-4 text-white/20" />
-          <p className="text-sm text-white/40 tracking-wide">
+        <Card className="p-8 text-center bg-card/95 backdrop-blur-md border-border shadow-md">
+          <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">
             {searchTerm ? `Nenhum registro encontrado para "${searchTerm}"` : 
              dateRange ? 'Nenhum registro para este período' : 
              'Nenhum registro encontrado'}
@@ -444,115 +448,141 @@ export const InspectionHistory = ({
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredRecords.map((record) => (
-              <Card 
-                key={record.id} 
-                className="group overflow-hidden bg-black border border-white/10 hover:border-white/20 transition-all duration-500"
-              >
-                <div className="p-5 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-light tracking-wide text-white">
+              <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
+                <div className="relative p-4 h-24">
+                  <img
+                    src={redBlackWaveOverlay}
+                    alt=""
+                    className="absolute top-0 left-0 w-full h-full object-cover"
+                  />
+                  <div className="relative z-10 flex items-center justify-between h-full">
+                    <div>
+                      <h3 className="font-bold text-lg text-white drop-shadow-lg">
                         {record.valve_code || "Sem código"}
                       </h3>
-                      <div className="flex items-center gap-2 text-xs text-white/40 tracking-wide">
-                        <Calendar className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 text-sm text-white/90 drop-shadow-md">
+                        <Calendar className="h-4 w-4" />
                         {formatDate(record.inspection_date)}
                       </div>
-                      <div className="flex items-center gap-2">
-                        {record.status === 'concluido' ? (
-                          <div className="flex items-center gap-1.5 text-xs text-white/60">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            <span className="tracking-wide">CONCLUÍDO</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-xs text-primary/80">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span className="tracking-wide">EM ANDAMENTO</span>
-                          </div>
-                        )}
-                      </div>
                     </div>
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-2">
                       {onEditRecord && (
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={() => onEditRecord(record)}
-                          className="h-8 w-8 text-white/40 hover:text-white hover:bg-white/5"
+                          className="text-white hover:bg-white/20"
+                          title="Editar inspeção"
                         >
-                          <Edit className="h-3.5 w-3.5" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                       )}
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDownload(record)}
-                        className="h-8 w-8 text-white/40 hover:text-white hover:bg-white/5"
+                        className="text-white hover:bg-white/20"
                       >
-                        <Download className="h-3.5 w-3.5" />
+                        <Download className="h-4 w-4" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(record.id)}
-                        className="h-8 w-8 text-white/40 hover:text-primary hover:bg-primary/5"
+                        className="text-white hover:bg-white/20"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  {/* Indicador de Progresso */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {record.status === 'concluido' ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          <span className="text-sm font-medium text-green-500">Completo</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="h-4 w-4 text-yellow-500" />
+                          <span className="text-sm font-medium text-yellow-500">Em andamento</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <div className={`h-2 w-2 rounded-full ${record.photo_initial_url ? 'bg-white' : 'bg-white/30'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_during_url ? 'bg-white' : 'bg-white/30'}`} />
+                      <div className={`h-2 w-2 rounded-full ${record.photo_final_url ? 'bg-white' : 'bg-white/30'}`} />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { url: record.photo_initial_url, label: "Início" },
-                      { url: record.photo_during_url, label: "Durante" },
-                      { url: record.photo_final_url, label: "Final" }
-                    ].map((photo, idx) => (
-                      <div key={idx} className="space-y-1.5">
-                        <div className="aspect-[3/4] rounded overflow-hidden bg-black/50 border border-white/5">
-                          {photo.url ? (
-                            <img
-                              src={photo.url}
-                              alt={photo.label}
-                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-[10px] text-white/20 tracking-wider">SEM FOTO</span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-white/30 text-center tracking-wider uppercase">
-                          {photo.label}
-                        </p>
+                    {record.photo_initial_url && (
+                      <div className="w-full h-20 rounded overflow-hidden">
+                        <img
+                          src={record.photo_initial_url}
+                          alt="Inicial"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       </div>
-                    ))}
+                    )}
+                    {record.photo_during_url && (
+                      <div className="w-full h-20 rounded overflow-hidden">
+                        <img
+                          src={record.photo_during_url}
+                          alt="Durante"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    {record.photo_final_url && (
+                      <div className="w-full h-20 rounded overflow-hidden">
+                        <img
+                          src={record.photo_final_url}
+                          alt="Final"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                   </div>
+
+                  {record.notes && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {record.notes}
+                    </p>
+                  )}
                 </div>
               </Card>
             ))}
           </div>
 
-          <div className="flex justify-center gap-2 pt-4">
+          {/* Controles de Paginação - Sempre visível quando há registros */}
+          <div className="flex justify-center gap-2 mt-6">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="text-xs tracking-wider bg-black hover:bg-white/5 border-white/10 hover:border-white/20 text-white disabled:opacity-30"
+              className="bg-transparent"
             >
-              ANTERIOR
+              Anterior
             </Button>
-            <span className="flex items-center px-4 text-xs text-white/40 tracking-wider">
-              PÁGINA {currentPage}
+            <span className="flex items-center px-4 text-sm text-muted-foreground">
+              Página {currentPage}
             </span>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(p => p + 1)}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
               disabled={filteredRecords.length < RECORDS_PER_PAGE}
-              className="text-xs tracking-wider bg-black hover:bg-white/5 border-white/10 hover:border-white/20 text-white disabled:opacity-30"
+              className="bg-transparent"
             >
-              PRÓXIMA
+              Próxima
             </Button>
           </div>
         </>

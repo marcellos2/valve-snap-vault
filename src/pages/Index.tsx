@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
+import { Separator } from "@/components/ui/separator";
 import tecnoiso from "@/assets/tecnoiso-logo.png";
+import labBackground from "@/assets/lab-background.jpg";
 
 const Index = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -23,32 +25,40 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="container mx-auto px-6 py-12 max-w-[1400px]">
-        <header className="mb-16 text-center space-y-6">
-          <img
-            src={tecnoiso}
-            alt="Tecnoiso"
-            className="h-12 mx-auto object-contain opacity-90"
-          />
-          <div className="space-y-3">
-            <h1 className="text-5xl md:text-6xl font-light tracking-wider text-white">
-              REGISTROS FOTOGRÁFICOS
-            </h1>
-            <p className="text-sm tracking-widest text-white/50 uppercase">
-              Sistema de Inspeção de Válvulas
-            </p>
+    <div className="min-h-screen bg-background relative">
+      {/* Background Image with Overlay */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${labBackground})` }}
+      >
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
+        <header className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <img
+              src={tecnoiso}
+              alt="Tecnoiso"
+              className="h-16 md:h-20 object-contain"
+            />
           </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+            REGISTROS FOTOGRÁFICOS
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Sistema de Inspeção de Válvulas
+          </p>
         </header>
 
-        <div className="space-y-20">
+        <div className="space-y-8">
           <InspectionForm 
             onSaved={handleSaved} 
             editingRecord={editingRecord}
             onCancelEdit={handleCancelEdit}
           />
 
-          <div className="border-t border-white/5" />
+          <Separator className="my-8" />
 
           <InspectionHistory 
             refreshTrigger={refreshTrigger}
