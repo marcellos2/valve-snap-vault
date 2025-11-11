@@ -3,7 +3,6 @@ import { Camera, Upload, RotateCw, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
-import redBlackWaveOverlay from "@/assets/red-black-wave-overlay.png";
 
 interface PhotoUploaderProps {
   title: string;
@@ -80,52 +79,47 @@ export const PhotoUploader = ({
 
   return (
     <>
-      <Card className="overflow-hidden bg-card/95 backdrop-blur-md border-border shadow-lg hover:shadow-xl transition-all">
-        <div className="relative h-24 overflow-hidden">
-          <img
-            src={redBlackWaveOverlay}
-            alt=""
-            className="absolute top-0 left-0 w-full h-full object-cover"
-          />
-          <div className="relative z-10 p-4 h-full flex flex-col justify-center">
-            <h3 className="font-bold text-lg text-white drop-shadow-lg">{title}</h3>
-            <p className="text-sm text-white/90 drop-shadow-md">{subtitle}</p>
+      <Card className="group overflow-hidden bg-black border border-white/10 hover:border-white/20 transition-all duration-500">
+        <div className="p-6 space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-light tracking-wider text-white uppercase">{title}</h3>
+            <p className="text-xs text-white/40 tracking-wide uppercase">{subtitle}</p>
           </div>
-        </div>
 
-        <div className="p-4">
           {photo ? (
-            <div className="relative group">
+            <div className="relative aspect-[3/4] bg-black/50 rounded overflow-hidden">
               <img
                 src={photo}
                 alt={title}
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover:scale-105"
+                onClick={() => setShowFullImage(true)}
               />
-              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <Button
                   size="icon"
-                  variant="secondary"
+                  variant="ghost"
                   onClick={onRotate}
-                  className="bg-white/95 backdrop-blur-md hover:bg-white shadow-md"
+                  className="h-8 w-8 bg-black/80 hover:bg-black text-white border border-white/20"
                 >
-                  <RotateCw className="h-4 w-4 text-foreground" />
+                  <RotateCw className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   size="icon"
-                  variant="destructive"
+                  variant="ghost"
                   onClick={onRemove}
-                  className="shadow-md"
+                  className="h-8 w-8 bg-black/80 hover:bg-primary text-white border border-white/20"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
           ) : (
             <div 
-              className={`h-64 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all cursor-pointer ${
+              className={`aspect-[3/4] rounded border transition-all duration-300 cursor-pointer flex items-center justify-center ${
                 isDragging 
-                  ? 'border-primary bg-primary/10 scale-105' 
-                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                  ? 'border-primary bg-primary/5 border-dashed' 
+                  : 'border-white/10 hover:border-white/20 bg-black/30 border-dashed'
               }`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -133,37 +127,40 @@ export const PhotoUploader = ({
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className="text-center p-4">
-                <Upload className={`h-12 w-12 mx-auto mb-2 transition-colors ${
-                  isDragging ? 'text-primary' : 'text-muted-foreground'
+              <div className="text-center space-y-3">
+                <Upload className={`h-8 w-8 mx-auto transition-colors duration-300 ${
+                  isDragging ? 'text-primary' : 'text-white/30'
                 }`} />
-                <p className={`text-sm font-medium transition-colors ${
-                  isDragging ? 'text-primary' : 'text-muted-foreground'
-                }`}>
-                  {isDragging ? 'Solte a imagem aqui' : 'Arraste uma imagem ou clique'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  JPG, PNG ou WEBP
-                </p>
+                <div>
+                  <p className={`text-xs font-light tracking-wide transition-colors duration-300 ${
+                    isDragging ? 'text-primary' : 'text-white/40'
+                  }`}>
+                    {isDragging ? 'SOLTE AQUI' : 'ARRASTE OU CLIQUE'}
+                  </p>
+                  <p className="text-[10px] text-white/20 mt-1 tracking-wider">
+                    JPG, PNG, WEBP
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="flex gap-2 mt-4">
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
               onClick={() => setShowCamera(true)}
-              className="flex-1"
+              variant="outline"
+              className="h-9 text-xs tracking-wide bg-black hover:bg-white/5 border-white/10 hover:border-white/20 text-white"
             >
-              <Camera className="h-4 w-4 mr-2" />
-              Tirar Foto
+              <Camera className="h-3.5 w-3.5 mr-2" />
+              TIRAR FOTO
             </Button>
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1"
+              className="h-9 text-xs tracking-wide bg-black hover:bg-white/5 border-white/10 hover:border-white/20 text-white"
             >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
+              <Upload className="h-3.5 w-3.5 mr-2" />
+              UPLOAD
             </Button>
           </div>
 
@@ -182,6 +179,19 @@ export const PhotoUploader = ({
           onCapture={handleCapture}
           onClose={() => setShowCamera(false)}
         />
+      )}
+      
+      {showFullImage && photo && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-8"
+          onClick={() => setShowFullImage(false)}
+        >
+          <img 
+            src={photo} 
+            alt={title}
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
       )}
     </>
   );
