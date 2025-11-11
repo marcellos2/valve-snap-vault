@@ -25,15 +25,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Background Image with Overlay */}
-      <div 
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${labBackground})` }}
-      >
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
-      </div>
-
+    <div className="min-h-screen bg-black relative">
       <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
         <header className="mb-8 text-center">
           <div className="flex items-center justify-center gap-4 mb-4">
