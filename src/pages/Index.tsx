@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
-import { Separator } from "@/components/ui/separator";
 import tecnoiso from "@/assets/tecnoiso-logo.png";
-import labBackground from "@/assets/lab-background.jpg";
 
 const Index = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -16,7 +14,6 @@ const Index = () => {
 
   const handleEditRecord = (record: any) => {
     setEditingRecord(record);
-    // Scroll suave para o formulário
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -25,47 +22,65 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Background Image with Overlay */}
-      <div 
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${labBackground})` }}
-      >
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
-      </div>
-
-      <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
-        <header className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-4 mb-4">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <img
               src={tecnoiso}
               alt="Tecnoiso"
-              className="h-16 md:h-20 object-contain"
+              className="h-10 md:h-12 object-contain brightness-0 invert opacity-90"
             />
+            <div className="text-right">
+              <h1 className="text-lg md:text-xl font-display font-semibold text-foreground">
+                Registros Fotográficos
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Sistema de Inspeção
+              </p>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-            REGISTROS FOTOGRÁFICOS
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Sistema de Inspeção de Válvulas
-          </p>
-        </header>
-
-        <div className="space-y-8">
-          <InspectionForm 
-            onSaved={handleSaved} 
-            editingRecord={editingRecord}
-            onCancelEdit={handleCancelEdit}
-          />
-
-          <Separator className="my-8" />
-
-          <InspectionHistory 
-            refreshTrigger={refreshTrigger}
-            onEditRecord={handleEditRecord}
-          />
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Form Section */}
+          <section className="animate-fade-up">
+            <InspectionForm 
+              onSaved={handleSaved} 
+              editingRecord={editingRecord}
+              onCancelEdit={handleCancelEdit}
+            />
+          </section>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 py-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+            <span className="text-xs text-muted-foreground uppercase tracking-widest">Histórico</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          </div>
+
+          {/* History Section */}
+          <section className="animate-fade-up delay-200">
+            <InspectionHistory 
+              refreshTrigger={refreshTrigger}
+              onEditRecord={handleEditRecord}
+            />
+          </section>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/30 py-6 mt-12">
+        <div className="container mx-auto px-4">
+          <p className="text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Tecnoiso — Sistema de Inspeção de Válvulas
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
