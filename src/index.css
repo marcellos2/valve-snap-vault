@@ -1,138 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Design system Tecnoiso - Tema Vinho com Degradê para Preto */
-
 @layer base {
   :root {
-    /* Paleta Tecnoiso - rgb(207, 14, 14) até preto */
-    --background: 0 0% 1%;
-    --foreground: 0 0% 0%;
+    /* All-Black Elegant Theme */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 95%;
 
-    /* Cards transparentes para mostrar o fundo */
-    --card: 0 0% 10% / 0.05;
-    --card-foreground: 0 0% 0%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 95%;
 
-    /* Popovers transparentes */
-    --popover: 0 0% 0% / 0.2;
-    --popover-foreground: 0 0% 0%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
 
-    /* rgb(207, 14, 14) = hsl(356, 87%, 43%) */
-    --primary: 356 87% 43%;
+    /* Primary: Deep Red Accent */
+    --primary: 0 85% 45%;
     --primary-foreground: 0 0% 100%;
-    /* rgb(155, 11, 11) = hsl(0, 87%, 33%) */
-    --primary-dark: 0 87% 33%;
 
-    /* Cinza escuro para secondary */
-    --secondary: 0 0% 20% / 0.2;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 0 0% 96% / 0.1;
-    --muted-foreground: 0 0% 5%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    /* rgb(155, 11, 11) como accent */
-    --accent: 0 87% 33%;
+    --accent: 0 70% 40%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 0.15;
-    --input: 0 0% 100% / 0.15;
-    --ring: 356 87% 43%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 0 85% 45%;
 
     --success: 142 71% 45%;
     --warning: 38 92% 50%;
 
-    --radius: 1rem;
-    
-    /* Gradientes Tecnoiso: rgb(207,14,14) → rgb(155,11,11) → rgb(104,7,7) → rgb(52,4,4) → rgb(0,0,0) */
-    --gradient-primary: linear-gradient(135deg, rgb(207, 14, 14), rgb(155, 11, 11));
-    --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-    --gradient-dark: linear-gradient(135deg, rgb(104, 7, 7), rgb(52, 4, 4));
-    --gradient-tecnoiso: linear-gradient(135deg, 
-      rgb(207, 14, 14) 0%, 
-      rgb(155, 11, 11) 25%,
-      rgb(104, 7, 7) 50%,
-      rgb(52, 4, 4) 75%,
-      rgb(0, 0, 0) 100%
-    );
-    
-    /* Sombras com tom vermelho Tecnoiso */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.15);
-    --shadow-elevated: 0 20px 25px -5px rgb(0 0 0 / 0.2);
-    --shadow-tecnoiso: 0 8px 32px 0 rgba(207, 14, 14, 0.3);
-    
-    /* Transições suaves */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s ease;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 356 87% 43%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 356 87% 43%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 85% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 85% 45%;
   }
 
   .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 3%;
+    --foreground: 0 0% 95%;
 
-    /* Cards e popovers escuros transparentes */
-    --card: 0 0% 0% / 0.2;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 0% / 0.25;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 356 87% 43%;
+    --primary: 0 85% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 87% 33%;
 
-    --secondary: 0 0% 25% / 0.3;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 0 0% 20% / 0.2;
-    --muted-foreground: 0 0% 80%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 0 87% 33%;
+    --accent: 0 70% 40%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 0.15;
-    --input: 0 0% 100% / 0.1;
-    --ring: 356 87% 43%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 0 85% 45%;
 
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    
-    --gradient-primary: linear-gradient(135deg, rgb(207, 14, 14), rgb(155, 11, 11));
-    --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-    --gradient-dark: linear-gradient(135deg, rgb(104, 7, 7), rgb(52, 4, 4));
-    --gradient-tecnoiso: linear-gradient(135deg, 
-      rgb(207, 14, 14) 0%, 
-      rgb(155, 11, 11) 25%,
-      rgb(104, 7, 7) 50%,
-      rgb(52, 4, 4) 75%,
-      rgb(0, 0, 0) 100%
-    );
-    
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 356 87% 43%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 20%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 356 87% 43%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 85% 45%;
   }
 }
 
@@ -142,128 +97,88 @@
   }
 
   body {
-    @apply text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 16px;
-    /* Gradiente Tecnoiso - rgb(207,14,14) até preto */
-    background: linear-gradient(135deg, 
-      rgb(207, 14, 14) 0%, 
-      rgb(155, 11, 11) 25%,
-      rgb(104, 7, 7) 50%,
-      rgb(52, 4, 4) 75%,
-      rgb(0, 0, 0) 100%
-    );
-    background-attachment: fixed;
-    min-height: 100vh;
   }
 
-  /* Estilos de botões industriais */
-  button {
-    @apply transition-all duration-300;
-    background: rgba(255, 255, 255, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  }
-  
-  button:hover {
-    background: rgba(255, 255, 255, 0.35) !important;
-  }
-
-  /* Inputs e campos de texto */
-  input, textarea, select {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #000000 !important;
-    font-size: 15px;
-    transition: all 0.3s ease;
-  }
-  
-  input:hover, textarea:hover, select:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  }
-  
-  input:focus, textarea:focus, select:focus {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    outline: none;
-  }
-  
-  input::placeholder, textarea::placeholder {
-    color: rgba(0, 0, 0, 0.4) !important;
-  }
-
-  /* Headers com peso industrial */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+    font-family: 'Space Grotesk', sans-serif;
+    @apply font-semibold tracking-tight;
   }
 }
 
-/* Utilitários personalizados Tecnoiso */
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent border border-border hover:bg-secondary hover:border-border/80 transition-all duration-200;
+  }
+
+  .input-elegant {
+    @apply bg-input border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all duration-200;
+  }
+
+  .section-header {
+    @apply relative overflow-hidden bg-gradient-to-r from-primary/90 to-accent/80 p-4;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent;
+  }
+}
+
 @layer utilities {
-  .industrial-gradient {
-    background: var(--gradient-primary);
+  .animate-fade-up {
+    animation: fadeUp 0.5s ease-out forwards;
   }
 
-  .industrial-shadow {
-    box-shadow: var(--shadow-tecnoiso);
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
   }
 
-  .industrial-border {
-    border: 2px solid rgb(207, 14, 14);
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
   }
 
-  /* Efeito de vidro - transparente como no site Tecnoiso */
-  .glass-effect {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(207, 14, 14, 0.2), 0 2px 8px 0 rgba(0, 0, 0, 0.3);
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  /* Efeito de vidro escuro */
-  .glass-effect-dark {
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(207, 14, 14, 0.15);
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  /* Cards transparentes - igual calendário do site */
-  .transparent-card {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
-  .transparent-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 24px 0 rgba(207, 14, 14, 0.25);
-  }
-
-  /* Gradiente Tecnoiso completo */
-  .tecnoiso-gradient {
-    background: var(--gradient-tecnoiso);
-  }
-
-  /* Cores individuais Tecnoiso */
-  .color-1 { 
-    background-color: rgb(207, 14, 14); 
-  }
-  .color-2 { 
-    background-color: rgb(155, 11, 11); 
-  }
-  .color-3 { 
-    background-color: rgb(104, 7, 7); 
-  }
-  .color-4 { 
-    background-color: rgb(52, 4, 4); 
-  }
-  .color-5 { 
-    background-color: rgb(0, 0, 0); 
-  }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
 }
