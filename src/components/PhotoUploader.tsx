@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, RotateCw, X } from "lucide-react";
+import { Camera, Upload, RotateCw, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
+import redBlackWaveOverlay from "@/assets/red-black-wave-overlay.png";
 
 interface PhotoUploaderProps {
   title: string;
@@ -22,6 +24,7 @@ export const PhotoUploader = ({
 }: PhotoUploaderProps) => {
   const [showCamera, setShowCamera] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,40 +80,41 @@ export const PhotoUploader = ({
 
   return (
     <>
-      <div className="glass-card-hover rounded-lg overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-accent p-4">
-          <h3 className="font-display font-semibold text-sm text-primary-foreground uppercase tracking-wide">
-            {title}
-          </h3>
-          <p className="text-xs text-primary-foreground/80 mt-0.5">
-            {subtitle}
-          </p>
+      <Card className="overflow-hidden bg-card/95 backdrop-blur-md border-border shadow-lg hover:shadow-xl transition-all">
+        <div className="relative h-24 overflow-hidden">
+          <img
+            src={redBlackWaveOverlay}
+            alt=""
+            className="absolute top-0 left-0 w-full h-full object-cover"
+          />
+          <div className="relative z-10 p-4 h-full flex flex-col justify-center">
+            <h3 className="font-bold text-lg text-white drop-shadow-lg">{title}</h3>
+            <p className="text-sm text-white/90 drop-shadow-md">{subtitle}</p>
+          </div>
         </div>
 
-        {/* Content */}
         <div className="p-4">
           {photo ? (
             <div className="relative group">
               <img
                 src={photo}
                 alt={title}
-                className="w-full aspect-[4/3] object-cover rounded-md"
+                className="w-full h-64 object-cover rounded-lg"
               />
-              <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center gap-2">
+              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   size="icon"
                   variant="secondary"
                   onClick={onRotate}
-                  className="h-9 w-9"
+                  className="bg-white/95 backdrop-blur-md hover:bg-white shadow-md"
                 >
-                  <RotateCw className="h-4 w-4" />
+                  <RotateCw className="h-4 w-4 text-foreground" />
                 </Button>
                 <Button
                   size="icon"
                   variant="destructive"
                   onClick={onRemove}
-                  className="h-9 w-9"
+                  className="shadow-md"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -118,10 +122,10 @@ export const PhotoUploader = ({
             </div>
           ) : (
             <div 
-              className={`aspect-[4/3] rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer transition-all ${
+              className={`h-64 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all cursor-pointer ${
                 isDragging 
-                  ? 'border-primary bg-primary/10' 
-                  : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                  ? 'border-primary bg-primary/10 scale-105' 
+                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
               }`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -130,33 +134,35 @@ export const PhotoUploader = ({
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="text-center p-4">
-                <Upload className={`h-8 w-8 mx-auto mb-2 ${
+                <Upload className={`h-12 w-12 mx-auto mb-2 transition-colors ${
                   isDragging ? 'text-primary' : 'text-muted-foreground'
                 }`} />
-                <p className="text-xs text-muted-foreground">
-                  {isDragging ? 'Solte aqui' : 'Arraste ou clique'}
+                <p className={`text-sm font-medium transition-colors ${
+                  isDragging ? 'text-primary' : 'text-muted-foreground'
+                }`}>
+                  {isDragging ? 'Solte a imagem aqui' : 'Arraste uma imagem ou clique'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JPG, PNG ou WEBP
                 </p>
               </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-4">
             <Button
               onClick={() => setShowCamera(true)}
-              size="sm"
-              className="flex-1 h-9 text-xs"
+              className="flex-1"
             >
-              <Camera className="h-3.5 w-3.5 mr-1.5" />
-              Câmera
+              <Camera className="h-4 w-4 mr-2" />
+              Tirar Foto
             </Button>
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              size="sm"
-              className="flex-1 h-9 text-xs"
+              className="flex-1"
             >
-              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              <Upload className="h-4 w-4 mr-2" />
               Upload
             </Button>
           </div>
@@ -169,7 +175,7 @@ export const PhotoUploader = ({
             className="hidden"
           />
         </div>
-      </div>
+      </Card>
 
       {showCamera && (
         <CameraCapture
