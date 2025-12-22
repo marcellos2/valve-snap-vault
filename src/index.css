@@ -2,100 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System Tecnoiso - Estilo Software Profissional */
+/* Design System Tecnoiso - Preto, Branco e Vermelho Escuro */
 
 @layer base {
   :root {
-    /* Cores sólidas e profissionais */
-    --background: 0 0% 96%;
-    --foreground: 0 0% 15%;
+    /* Tema preto, branco e vermelho escuro */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    /* Cards com fundo sólido */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 100%;
 
-    /* Popovers */
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
 
-    /* Tecnoiso Primary: rgb(207, 14, 14) = hsl(356, 87%, 43%) */
-    --primary: 356 87% 43%;
+    /* Vermelho escuro: rgb(127, 29, 29) = hsl(0, 63%, 30%) */
+    --primary: 0 63% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 87% 33%;
+    --primary-dark: 0 63% 25%;
 
-    /* Secondary neutro */
-    --secondary: 0 0% 92%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 0 0% 5%;
+    --muted-foreground: 0 0% 60%;
 
-    /* Accent - laranja similar ao exemplo */
-    --accent: 25 95% 53%;
+    --accent: 0 63% 30%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 356 87% 43%;
+    --border: 0 0% 15%;
+    --input: 0 0% 8%;
+    --ring: 0 63% 30%;
 
     --success: 142 71% 45%;
     --warning: 38 92% 50%;
 
     --radius: 0.5rem;
 
-    /* Sidebar escura */
-    --sidebar-background: 0 0% 12%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 356 87% 50%;
+    /* Sidebar preto */
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 63% 30%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent: 0 0% 6%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 356 87% 43%;
-    --sidebar-muted: 0 0% 55%;
-  }
-
-  .dark {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
-
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 356 87% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 87% 40%;
-
-    --secondary: 0 0% 18%;
-    --secondary-foreground: 0 0% 90%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
-
-    --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 356 87% 50%;
-
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 356 87% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 356 87% 50%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 0 63% 30%;
     --sidebar-muted: 0 0% 50%;
   }
 }
@@ -119,33 +74,33 @@
 }
 
 @layer components {
-  /* Status badges */
+  /* Status badges com tema vermelho */
   .status-badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium;
   }
   
   .status-online {
-    @apply bg-green-100 text-green-700;
+    @apply bg-green-500/20 text-green-400 border border-green-500/50;
   }
   
   .status-offline {
-    @apply bg-gray-100 text-gray-600;
+    @apply bg-gray-500/20 text-gray-400 border border-gray-500/50;
   }
   
   .status-pending {
-    @apply bg-yellow-100 text-yellow-700;
+    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/50;
   }
   
   .status-complete {
-    @apply bg-blue-100 text-blue-700;
+    @apply bg-red-900/30 text-red-400 border border-red-900/50;
   }
 }
 
 @layer utilities {
-  /* Scrollbar personalizada */
+  /* Scrollbar personalizada tema escuro */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-color: hsl(0 0% 20%) transparent;
   }
   
   .scrollbar-thin::-webkit-scrollbar {
@@ -158,11 +113,11 @@
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--border));
+    background-color: hsl(0 0% 20%);
     border-radius: 3px;
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground));
+    background-color: hsl(0 63% 30%);
   }
 }

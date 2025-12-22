@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Save, Loader2, Copy, Check } from "lucide-react";
+import { Save, Loader2, Copy, Check, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Tesseract from "tesseract.js";
@@ -34,7 +34,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   const [isExtractingCode, setIsExtractingCode] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
-  // Atualizar o formulário quando editingRecord mudar
   useEffect(() => {
     if (editingRecord) {
       setValveCode(editingRecord.valve_code || "");
@@ -48,7 +47,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     return new Promise((resolve, reject) => {
       const img = new Image();
       
-      // Se for URL externa (Supabase), precisamos do crossOrigin
       if (photo.startsWith('http')) {
         img.crossOrigin = "anonymous";
       }
@@ -77,7 +75,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       
       img.onerror = (error) => {
         console.error("Erro ao carregar imagem para rotação:", error);
-        // Tentar novamente sem crossOrigin
         const img2 = new Image();
         img2.onload = () => {
           const canvas = document.createElement("canvas");
@@ -131,50 +128,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     }
   };
 
-  const extractCodeFromImage = async (imageData: string) => {
-    setIsExtractingCode(true);
-    try {
-      const result = await Tesseract.recognize(imageData, "eng", {
-        logger: (m) => console.log(m),
-      });
-      
-      const text = result.data.text.toUpperCase().replace(/\s+/g, " ");
-      console.log("Texto detectado:", text);
-      
-      // Buscar padrões específicos de código de válvula
-      // Padrão 1: VAL seguido de espaço e números (ex: VAL 005)
-      let codeMatch = text.match(/VAL\s*(\d{3,})/);
-      
-      // Padrão 2: VLV seguido de hífen e números (ex: VLV-001)
-      if (!codeMatch) {
-        codeMatch = text.match(/VLV[-\s]*(\d{3,})/);
-      }
-      
-      // Padrão 3: Qualquer sequência alfanumérica de 4+ caracteres
-      if (!codeMatch) {
-        const matches = text.match(/[A-Z]{2,}\s*\d{3,}/);
-        if (matches) codeMatch = matches;
-      }
-      
-      if (codeMatch) {
-        // Formatar o código: manter formato original se tiver VAL/VLV, senão usar o que foi encontrado
-        const detectedCode = codeMatch[0].replace(/\s+/g, " ").trim();
-        setValveCode(detectedCode);
-        toast({
-          title: "Código detectado!",
-          description: `Código da válvula: ${detectedCode}`,
-        });
-      } else {
-        console.log("Nenhum código encontrado no padrão esperado");
-      }
-    } catch (error) {
-      console.error("Erro ao extrair código:", error);
-    } finally {
-      setIsExtractingCode(false);
-    }
-  };
-
-
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
     try {
       if (!photoData) {
@@ -195,10 +148,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       }
       const blob = new Blob([byteArray], { type: "image/jpeg" });
 
-      // Use a unique filename with timestamp and random string
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}.jpg`;
-      
-      console.log(`Uploading ${fileName} to ${filePath}...`);
       
       const { error, data: uploadData } = await supabase.storage
         .from("valve-photos")
@@ -211,8 +161,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         console.error(`Error uploading ${fileName}:`, error);
         throw error;
       }
-
-      console.log(`Successfully uploaded ${fileName}`);
 
       const { data } = supabase.storage
         .from("valve-photos")
@@ -237,7 +185,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         description: "O código da válvula é obrigatório",
         variant: "destructive",
       });
-      // Scroll e foco no campo de código
       valveCodeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setTimeout(() => {
         valveCodeRef.current?.focus();
@@ -257,64 +204,40 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     setIsSaving(true);
 
     try {
-      console.log("Starting save process...");
-      console.log("Photos present:", { 
-        initial: !!photoInitial, 
-        during: !!photoDuring, 
-        final: !!photoFinal 
-      });
-
-      // Manter URLs antigas se estiver editando
       let photoInitialUrl = editingRecord?.photo_initial_url || null;
       let photoDuringUrl = editingRecord?.photo_during_url || null;
       let photoFinalUrl = editingRecord?.photo_final_url || null;
 
-      // Upload apenas fotos novas (base64)
-      // Se a foto já é uma URL do storage, não fazer upload novamente
       if (photoInitial && photoInitial.startsWith('data:')) {
-        console.log("Uploading initial photo...");
         const uploadedUrl = await uploadPhoto(photoInitial, "initial");
-        if (!uploadedUrl) {
-          throw new Error("Falha ao enviar foto inicial");
-        }
+        if (!uploadedUrl) throw new Error("Falha ao enviar foto inicial");
         photoInitialUrl = uploadedUrl;
       } else if (photoInitial) {
-        photoInitialUrl = photoInitial; // Manter URL existente
+        photoInitialUrl = photoInitial;
       }
       
       if (photoDuring && photoDuring.startsWith('data:')) {
-        console.log("Uploading during photo...");
         const uploadedUrl = await uploadPhoto(photoDuring, "during");
-        if (!uploadedUrl) {
-          throw new Error("Falha ao enviar foto durante");
-        }
+        if (!uploadedUrl) throw new Error("Falha ao enviar foto durante");
         photoDuringUrl = uploadedUrl;
       } else if (photoDuring) {
-        photoDuringUrl = photoDuring; // Manter URL existente
+        photoDuringUrl = photoDuring;
       }
       
       if (photoFinal && photoFinal.startsWith('data:')) {
-        console.log("Uploading final photo...");
         const uploadedUrl = await uploadPhoto(photoFinal, "final");
-        if (!uploadedUrl) {
-          throw new Error("Falha ao enviar foto final");
-        }
+        if (!uploadedUrl) throw new Error("Falha ao enviar foto final");
         photoFinalUrl = uploadedUrl;
       } else if (photoFinal) {
-        photoFinalUrl = photoFinal; // Manter URL existente
+        photoFinalUrl = photoFinal;
       }
 
-      console.log("All photos uploaded successfully");
-      console.log("Photo URLs:", { photoInitialUrl, photoDuringUrl, photoFinalUrl });
-
-      // Calcular status baseado nas fotos presentes
       const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
       const status = hasAllPhotos ? 'concluido' : 'em_andamento';
 
       let error;
       
       if (editingRecord) {
-        // Atualizar registro existente - sempre atualizar todas as URLs
         const result = await supabase
           .from("inspection_records")
           .update({
@@ -328,7 +251,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         
         error = result.error;
       } else {
-        // Criar novo registro
         const result = await supabase.from("inspection_records").insert({
           valve_code: valveCode || null,
           photo_initial_url: photoInitialUrl,
@@ -346,8 +268,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         throw error;
       }
 
-      console.log("Record saved successfully");
-
       const allPhotosPresent = (photoInitialUrl || editingRecord?.photo_initial_url) && 
                                (photoDuringUrl || editingRecord?.photo_during_url) && 
                                (photoFinalUrl || editingRecord?.photo_final_url);
@@ -359,7 +279,6 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
           : "Inspeção salva. Você pode adicionar as fotos restantes depois",
       });
 
-      // Limpar formulário
       setValveCode("");
       setPhotoInitial(null);
       setPhotoDuring(null);
@@ -413,16 +332,20 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {editingRecord && onCancelEdit && (
         <div className="flex items-center justify-end">
-          <Button variant="ghost" size="sm" onClick={onCancelEdit}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onCancelEdit} 
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
             Cancelar edição
           </Button>
         </div>
       )}
 
-      {/* Grid de fotos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <PhotoUploader
           title="INÍCIO DA INSPEÇÃO"
@@ -452,71 +375,76 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         />
       </div>
 
-      {/* Campo de Código da Válvula */}
-      <Card className="p-4 border border-border">
+      <Card className="p-6 border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg hover:shadow-xl transition-all duration-300">
         <div>
-          <Label htmlFor="valveCode" className="text-sm font-medium">
-            Código da Válvula <span className="text-destructive">*</span>
+          <Label htmlFor="valveCode" className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            Código da Válvula 
+            <span className="flex items-center gap-1 text-red-600 dark:text-red-500">
+              <AlertCircle className="h-3.5 w-3.5" />
+              obrigatório
+            </span>
           </Label>
-          <div className="mt-2">
+          <div className="mt-3">
             <Input
               ref={valveCodeRef}
               id="valveCode"
               value={valveCode}
               onChange={(e) => setValveCode(e.target.value)}
               placeholder="Ex: VLV-001"
-              className="h-10"
+              className="h-11 bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:border-red-500 dark:focus:border-red-600 transition-all duration-300"
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
             Campo obrigatório para salvar o relatório
           </p>
         </div>
       </Card>
 
-      {/* Botão Salvar */}
       <Button
         onClick={handleSave}
         disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
-        className="w-full h-11"
+        className="w-full h-12 gradient-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
       >
         {isSaving ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Salvando...
           </>
         ) : (
           <>
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 h-5 w-5" />
             {editingRecord ? "Atualizar Inspeção" : "Salvar Relatório"}
           </>
         )}
       </Button>
       
       {!editingRecord && (photoInitial || photoDuring || photoFinal) && (
-        <p className="text-xs text-muted-foreground text-center">
-          Você pode salvar com fotos parciais e adicionar as restantes depois
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          💡 Você pode salvar com fotos parciais e adicionar as restantes depois
         </p>
       )}
 
-      {/* Seção de Textos Padronizados */}
-      <div className="space-y-3 pt-4 border-t border-border">
-        <h3 className="text-sm font-semibold text-foreground">Textos Padronizados</h3>
+      <div className="space-y-3 pt-6 border-t-2 border-gray-200 dark:border-gray-800">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <Copy className="h-4 w-4" />
+          Textos Padronizados
+        </h3>
         {standardTexts.map((item) => (
-          <Card key={item.id} className="p-3 border border-border">
+          <Card key={item.id} className="p-4 border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-red-500 dark:hover:border-red-600 hover:shadow-lg transition-all duration-300">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-xs text-muted-foreground mb-1">{item.title}</h4>
-                <p className="text-sm text-foreground">{item.text}</p>
+                <h4 className="font-semibold text-xs text-gray-500 dark:text-gray-400 mb-2">{item.title}</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{item.text}</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => copyToClipboard(item.text, item.id)}
-                className="shrink-0 h-8 w-8"
+                className="shrink-0 h-9 w-9 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300"
               >
                 {copiedText === item.id ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
