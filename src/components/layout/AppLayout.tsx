@@ -110,7 +110,7 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Versão do Sistema</p>
               <p className="text-sm font-bold text-gray-900 dark:text-white">v2.0.0</p>
               <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-400 dark:text-gray-500">© 2024 Tecnoiso</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">© 2025 Tecnoiso</p>
               </div>
             </div>
           </div>

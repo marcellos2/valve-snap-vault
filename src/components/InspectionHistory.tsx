@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Calendar, FileText, Trash2, Download, Search, Edit, CheckCircle2, Clock, Filter } from "lucide-react";
+import { Calendar, FileText, Trash2, Download, Search, Edit, CheckCircle2, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -100,22 +99,19 @@ export const InspectionHistory = ({
         
         if (searchTerm.trim() !== "") {
           query = query.ilike("valve_code", `%${searchTerm}%`);
-        } 
-        else if (dateRange?.from) {
+        } else if (dateRange?.from) {
           const start = new Date(dateRange.from);
           start.setHours(0, 0, 0, 0);
           
           if (dateRange.to) {
             const end = new Date(dateRange.to);
             end.setHours(23, 59, 59, 999);
-            
             query = query
               .gte("inspection_date", start.toISOString())
               .lte("inspection_date", end.toISOString());
           } else {
             const end = new Date(start);
             end.setHours(23, 59, 59, 999);
-            
             query = query
               .gte("inspection_date", start.toISOString())
               .lte("inspection_date", end.toISOString());
@@ -150,13 +146,9 @@ export const InspectionHistory = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: "Registro excluído",
-      });
+      toast({ title: "Registro excluído" });
       loadRecords();
     } catch (error) {
-      console.error("Erro ao excluir:", error);
       toast({
         title: "Erro",
         description: "Falha ao excluir registro",
@@ -169,16 +161,13 @@ export const InspectionHistory = ({
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      
       img.onload = () => resolve(img);
-      
       img.onerror = (error) => {
         const img2 = new Image();
         img2.onload = () => resolve(img2);
         img2.onerror = () => reject(error);
         img2.src = url;
       };
-      
       img.src = url;
     });
   };
@@ -187,10 +176,7 @@ export const InspectionHistory = ({
     try {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d", { willReadFrequently: false });
-      
-      if (!ctx) {
-        throw new Error("Não foi possível criar contexto do canvas");
-      }
+      if (!ctx) throw new Error("Não foi possível criar contexto");
 
       const width = 2000;
       const height = 752;
@@ -201,7 +187,7 @@ export const InspectionHistory = ({
       ctx.fillRect(0, 0, width, height);
 
       const headerHeight = 108;
-      ctx.fillStyle = "#dc2626";
+      ctx.fillStyle = "#4a6fa5";
       ctx.fillRect(0, 0, width, headerHeight);
 
       ctx.fillStyle = "#FFFFFF";
@@ -225,12 +211,12 @@ export const InspectionHistory = ({
         const photo = photos[i];
         const x = startX + i * (photoWidth + spacing);
 
-        ctx.strokeStyle = "#dc2626";
+        ctx.strokeStyle = "#a8b8d1";
         ctx.lineWidth = 3;
         ctx.strokeRect(x, startY, photoWidth, photoHeight);
 
         const cardHeaderHeight = 70;
-        ctx.fillStyle = "#dc2626";
+        ctx.fillStyle = "#4a6fa5";
         ctx.fillRect(x, startY, photoWidth, cardHeaderHeight);
 
         ctx.fillStyle = "#FFFFFF";
@@ -244,7 +230,6 @@ export const InspectionHistory = ({
         if (photo.url) {
           try {
             const img = await loadImage(photo.url);
-            
             const imgY = startY + cardHeaderHeight + 15;
             const imgHeight = photoHeight - cardHeaderHeight - 30;
             const imgWidth = photoWidth - 30;
@@ -257,25 +242,19 @@ export const InspectionHistory = ({
 
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(x + 15, startY + cardHeaderHeight + 15, photoWidth - 30, photoHeight - cardHeaderHeight - 30);
-            
             ctx.drawImage(img, imgX, centeredImgY, scaledWidth, scaledHeight);
-          } catch (error) {
-            console.error(`Erro ao carregar/desenhar foto ${i + 1}:`, error);
+          } catch {
             ctx.fillStyle = "#f3f4f6";
             ctx.fillRect(x + 15, startY + cardHeaderHeight + 15, photoWidth - 30, photoHeight - cardHeaderHeight - 30);
-            
-            ctx.fillStyle = "#9ca3af";
+            ctx.fillStyle = "#6b7280";
             ctx.font = "14px Arial";
-            ctx.textAlign = "center";
             ctx.fillText("Imagem não disponível", x + photoWidth / 2, startY + photoHeight / 2);
           }
         } else {
           ctx.fillStyle = "#f3f4f6";
           ctx.fillRect(x + 15, startY + cardHeaderHeight + 15, photoWidth - 30, photoHeight - cardHeaderHeight - 30);
-          
-          ctx.fillStyle = "#9ca3af";
+          ctx.fillStyle = "#6b7280";
           ctx.font = "14px Arial";
-          ctx.textAlign = "center";
           ctx.fillText("Sem foto", x + photoWidth / 2, startY + photoHeight / 2);
         }
       }
@@ -289,24 +268,14 @@ export const InspectionHistory = ({
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          
-          setTimeout(() => {
-            URL.revokeObjectURL(url);
-          }, 100);
-          
-          toast({
-            title: "Sucesso",
-            description: "Imagem baixada com sucesso",
-          });
-        } else {
-          throw new Error("Falha ao criar blob da imagem");
+          setTimeout(() => URL.revokeObjectURL(url), 100);
+          toast({ title: "Download concluído" });
         }
       }, "image/png", 1.0);
     } catch (error) {
-      console.error("Erro ao gerar imagem:", error);
       toast({
         title: "Erro",
-        description: "Falha ao gerar imagem. Verifique as permissões das imagens.",
+        description: "Falha ao gerar imagem",
         variant: "destructive",
       });
     }
@@ -315,241 +284,153 @@ export const InspectionHistory = ({
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 dark:border-gray-700 border-t-red-600 dark:border-t-red-500"></div>
-        <p className="text-gray-500 dark:text-gray-400 mt-4">Carregando histórico...</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <Card className="p-4 border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal h-10 min-w-[220px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 hover:border-red-500 dark:hover:border-red-600 transition-all duration-300",
-                  !dateRange && "text-gray-500 dark:text-gray-400"
-                )}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {formatDate(dateRange.from.toISOString()).split(' ')[0]} - {formatDate(dateRange.to.toISOString()).split(' ')[0]}
-                    </>
-                  ) : (
-                    formatDate(dateRange.from.toISOString()).split(' ')[0]
-                  )
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="glass-card rounded-lg p-4 space-y-3">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal h-10",
+                !dateRange && "text-muted-foreground"
+              )}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              {dateRange?.from ? (
+                dateRange.to ? (
+                  <>
+                    {formatDate(dateRange.from.toISOString()).split(' ')[0]} — {formatDate(dateRange.to.toISOString()).split(' ')[0]}
+                  </>
                 ) : (
-                  <span>Selecione o período</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-800" align="start">
-              <CalendarComponent
-                mode="range"
-                selected={dateRange}
-                onSelect={(range: any) => setDateRange(range)}
-                initialFocus
-                className="pointer-events-auto"
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Pesquisar por código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10 border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-red-500 dark:focus:border-red-600"
+                  formatDate(dateRange.from.toISOString()).split(' ')[0]
+                )
+              ) : (
+                <span>Selecione o período</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent
+              mode="range"
+              selected={dateRange}
+              onSelect={(range: any) => setDateRange(range)}
+              initialFocus
+              numberOfMonths={2}
             />
-          </div>
+          </PopoverContent>
+        </Popover>
 
-          {(dateRange || searchTerm) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setDateRange({ from: new Date(), to: new Date() });
-                setSearchTerm("");
-              }}
-              className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Limpar
-            </Button>
-          )}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Pesquisar código..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-10 input-elegant"
+          />
         </div>
-      </Card>
+      </div>
 
+      {/* Records */}
       {filteredRecords.length === 0 ? (
-        <Card className="p-12 text-center border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
-          <div className="mx-auto w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-            <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
-          </div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">
-            {searchTerm ? `Nenhum registro para "${searchTerm}"` : 
-             dateRange ? 'Nenhum registro neste período' : 
-             'Nenhum registro encontrado'}
+        <div className="glass-card rounded-lg p-12 text-center">
+          <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {searchTerm ? `Nenhum resultado para "${searchTerm}"` : 'Nenhum registro encontrado'}
           </p>
-        </Card>
+        </div>
       ) : (
-        <>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            {filteredRecords.length} registro(s) encontrado(s)
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredRecords.map((record) => (
+            <div 
+              key={record.id} 
+              className="glass-card-hover rounded-lg overflow-hidden"
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-border/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-display font-semibold text-foreground">
+                      {record.valve_code || "Sem código"}
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(record.inspection_date)}
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded-full text-xs",
+                    record.status === 'concluido' 
+                      ? "bg-green-500/10 text-green-500" 
+                      : "bg-yellow-500/10 text-yellow-500"
+                  )}>
+                    {record.status === 'concluido' ? (
+                      <CheckCircle2 className="h-3 w-3" />
+                    ) : (
+                      <Clock className="h-3 w-3" />
+                    )}
+                    <span>{record.status === 'concluido' ? 'Concluído' : 'Pendente'}</span>
+                  </div>
+                </div>
+              </div>
 
-          <Card className="border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-lg">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-100 dark:bg-gray-850">
-                  <tr>
-                    <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-4 py-4">
-                      Código
-                    </th>
-                    <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-4 py-4">
-                      Data
-                    </th>
-                    <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-4 py-4">
-                      Status
-                    </th>
-                    <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-4 py-4">
-                      Fotos
-                    </th>
-                    <th className="text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-4 py-4">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {filteredRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-850 transition-colors duration-200">
-                      <td className="px-4 py-4">
-                        <span className="font-bold text-gray-900 dark:text-white">
-                          {record.valve_code || "Sem código"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(record.inspection_date)}
-                      </td>
-                      <td className="px-4 py-4">
-                        {record.status === 'concluido' ? (
-                          <span className="status-badge status-complete">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Completo
-                          </span>
-                        ) : (
-                          <span className="status-badge status-pending">
-                            <Clock className="h-3.5 w-3.5" />
-                            Em andamento
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex gap-2">
-                          <div className={`h-10 w-10 rounded-lg border-2 ${record.photo_initial_url ? 'border-gray-300 dark:border-gray-700 overflow-hidden' : 'border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-850'}`}>
-                            {record.photo_initial_url && (
-                              <img
-                                src={record.photo_initial_url}
-                                alt="Inicial"
-                                className="w-full h-full object-cover hover:scale-150 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            )}
-                          </div>
-                          <div className={`h-10 w-10 rounded-lg border-2 ${record.photo_during_url ? 'border-gray-300 dark:border-gray-700 overflow-hidden' : 'border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-850'}`}>
-                            {record.photo_during_url && (
-                              <img
-                                src={record.photo_during_url}
-                                alt="Durante"
-                                className="w-full h-full object-cover hover:scale-150 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            )}
-                          </div>
-                          <div className={`h-10 w-10 rounded-lg border-2 ${record.photo_final_url ? 'border-gray-300 dark:border-gray-700 overflow-hidden' : 'border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-850'}`}>
-                            {record.photo_final_url && (
-                              <img
-                                src={record.photo_final_url}
-                                alt="Final"
-                                className="w-full h-full object-cover hover:scale-150 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex justify-end gap-2">
-                          {onEditRecord && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => onEditRecord(record)}
-                              className="h-9 w-9 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-300"
-                              title="Editar"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDownload(record)}
-                            className="h-9 w-9 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-300"
-                            title="Download"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDelete(record.id)}
-                            className="h-9 w-9 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300"
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {/* Photos Preview */}
+              <div className="grid grid-cols-3 gap-1 p-2">
+                {[record.photo_initial_url, record.photo_during_url, record.photo_final_url].map((url, i) => (
+                  <div key={i} className="aspect-square bg-secondary rounded overflow-hidden">
+                    {url ? (
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 p-2 border-t border-border/50">
+                {onEditRecord && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onEditRecord(record)}
+                    className="flex-1 h-8 text-xs"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Editar
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleDownload(record)}
+                  className="flex-1 h-8 text-xs"
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Baixar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleDelete(record.id)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
-          </Card>
-
-          <div className="flex justify-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 disabled:opacity-50 hover:scale-105 transition-all duration-300"
-            >
-              ← Anterior
-            </Button>
-            <span className="flex items-center px-4 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              Página {currentPage}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={filteredRecords.length < RECORDS_PER_PAGE}
-              className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 disabled:opacity-50 hover:scale-105 transition-all duration-300"
-            >
-              Próxima →
-            </Button>
-          </div>
-        </>
+          ))}
+        </div>
       )}
     </div>
   );
