@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
-import { Separator } from "@/components/ui/separator";
-import tecnoiso from "@/assets/tecnoiso-logo.png";
-import labBackground from "@/assets/lab-background.jpg";
+import { Card } from "@/components/ui/card";
+import { FileText, Settings as SettingsIcon } from "lucide-react";
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<"inspection" | "history" | "reports" | "settings">("inspection");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
@@ -16,57 +17,70 @@ const Index = () => {
 
   const handleEditRecord = (record: any) => {
     setEditingRecord(record);
-    // Scroll suave para o formulário
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveTab("inspection");
   };
 
   const handleCancelEdit = () => {
     setEditingRecord(null);
   };
 
-  return (
-    <div className="min-h-screen bg-background relative">
-      {/* Background Image with Overlay */}
-      <div 
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${labBackground})` }}
-      >
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
-      </div>
+  const getTitle = () => {
+    switch (activeTab) {
+      case "inspection": return editingRecord ? "Editar Inspeção" : "Nova Inspeção";
+      case "history": return "Histórico de Inspeções";
+      case "reports": return "Relatórios";
+      case "settings": return "Configurações";
+    }
+  };
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
-        <header className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <img
-              src={tecnoiso}
-              alt="Tecnoiso"
-              className="h-16 md:h-20 object-contain"
-            />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-            REGISTROS FOTOGRÁFICOS
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Sistema de Inspeção de Válvulas
-          </p>
-        </header>
-
-        <div className="space-y-8">
+  const renderContent = () => {
+    switch (activeTab) {
+      case "inspection":
+        return (
           <InspectionForm 
             onSaved={handleSaved} 
             editingRecord={editingRecord}
             onCancelEdit={handleCancelEdit}
           />
-
-          <Separator className="my-8" />
-
+        );
+      case "history":
+        return (
           <InspectionHistory 
             refreshTrigger={refreshTrigger}
             onEditRecord={handleEditRecord}
           />
-        </div>
-      </div>
-    </div>
+        );
+      case "reports":
+        return (
+          <Card className="p-12 text-center">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-semibold mb-2">Relatórios</h2>
+            <p className="text-muted-foreground">
+              Funcionalidade em desenvolvimento
+            </p>
+          </Card>
+        );
+      case "settings":
+        return (
+          <Card className="p-12 text-center">
+            <SettingsIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-semibold mb-2">Configurações</h2>
+            <p className="text-muted-foreground">
+              Funcionalidade em desenvolvimento
+            </p>
+          </Card>
+        );
+    }
+  };
+
+  return (
+    <AppLayout 
+      activeTab={activeTab} 
+      onTabChange={setActiveTab}
+      title={getTitle()}
+    >
+      {renderContent()}
+    </AppLayout>
   );
 };
 
