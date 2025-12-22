@@ -2,137 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design system Tecnoiso - Tema Vinho com Degradê para Preto */
+/* Design System Tecnoiso - Estilo Software Profissional */
 
 @layer base {
   :root {
-    /* Paleta Tecnoiso - rgb(207, 14, 14) até preto */
-    --background: 0 0% 1%;
-    --foreground: 0 0% 0%;
+    /* Cores sólidas e profissionais */
+    --background: 0 0% 96%;
+    --foreground: 0 0% 15%;
 
-    /* Cards transparentes para mostrar o fundo */
-    --card: 0 0% 10% / 0.05;
-    --card-foreground: 0 0% 0%;
+    /* Cards com fundo sólido */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
 
-    /* Popovers transparentes */
-    --popover: 0 0% 0% / 0.2;
-    --popover-foreground: 0 0% 0%;
+    /* Popovers */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
 
-    /* rgb(207, 14, 14) = hsl(356, 87%, 43%) */
+    /* Tecnoiso Primary: rgb(207, 14, 14) = hsl(356, 87%, 43%) */
     --primary: 356 87% 43%;
     --primary-foreground: 0 0% 100%;
-    /* rgb(155, 11, 11) = hsl(0, 87%, 33%) */
     --primary-dark: 0 87% 33%;
 
-    /* Cinza escuro para secondary */
-    --secondary: 0 0% 20% / 0.2;
-    --secondary-foreground: 0 0% 0%;
+    /* Secondary neutro */
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 0 0% 96% / 0.1;
-    --muted-foreground: 0 0% 5%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    /* rgb(155, 11, 11) como accent */
-    --accent: 0 87% 33%;
+    /* Accent - laranja similar ao exemplo */
+    --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 0.15;
-    --input: 0 0% 100% / 0.15;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
     --ring: 356 87% 43%;
 
     --success: 142 71% 45%;
     --warning: 38 92% 50%;
 
-    --radius: 1rem;
-    
-    /* Gradientes Tecnoiso: rgb(207,14,14) → rgb(155,11,11) → rgb(104,7,7) → rgb(52,4,4) → rgb(0,0,0) */
-    --gradient-primary: linear-gradient(135deg, rgb(207, 14, 14), rgb(155, 11, 11));
-    --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-    --gradient-dark: linear-gradient(135deg, rgb(104, 7, 7), rgb(52, 4, 4));
-    --gradient-tecnoiso: linear-gradient(135deg, 
-      rgb(207, 14, 14) 0%, 
-      rgb(155, 11, 11) 25%,
-      rgb(104, 7, 7) 50%,
-      rgb(52, 4, 4) 75%,
-      rgb(0, 0, 0) 100%
-    );
-    
-    /* Sombras com tom vermelho Tecnoiso */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.15);
-    --shadow-elevated: 0 20px 25px -5px rgb(0 0 0 / 0.2);
-    --shadow-tecnoiso: 0 8px 32px 0 rgba(207, 14, 14, 0.3);
-    
-    /* Transições suaves */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s ease;
+    --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 356 87% 43%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 356 87% 43%;
-  }
-
-  .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-
-    /* Cards e popovers escuros transparentes */
-    --card: 0 0% 0% / 0.2;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 0% / 0.25;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 356 87% 43%;
-    --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 87% 33%;
-
-    --secondary: 0 0% 25% / 0.3;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 0 0% 20% / 0.2;
-    --muted-foreground: 0 0% 80%;
-
-    --accent: 0 87% 33%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 100% / 0.15;
-    --input: 0 0% 100% / 0.1;
-    --ring: 356 87% 43%;
-
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    
-    --gradient-primary: linear-gradient(135deg, rgb(207, 14, 14), rgb(155, 11, 11));
-    --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-    --gradient-dark: linear-gradient(135deg, rgb(104, 7, 7), rgb(52, 4, 4));
-    --gradient-tecnoiso: linear-gradient(135deg, 
-      rgb(207, 14, 14) 0%, 
-      rgb(155, 11, 11) 25%,
-      rgb(104, 7, 7) 50%,
-      rgb(52, 4, 4) 75%,
-      rgb(0, 0, 0) 100%
-    );
-    
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 356 87% 43%;
+    /* Sidebar escura */
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 356 87% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent: 0 0% 18%;
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 20%;
     --sidebar-ring: 356 87% 43%;
+    --sidebar-muted: 0 0% 55%;
+  }
+
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 356 87% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 0 87% 40%;
+
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 356 87% 50%;
+
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 356 87% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 356 87% 50%;
+    --sidebar-muted: 0 0% 50%;
   }
 }
 
@@ -142,128 +106,63 @@
   }
 
   body {
-    @apply text-foreground;
+    @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 16px;
-    /* Gradiente Tecnoiso - rgb(207,14,14) até preto */
-    background: linear-gradient(135deg, 
-      rgb(207, 14, 14) 0%, 
-      rgb(155, 11, 11) 25%,
-      rgb(104, 7, 7) 50%,
-      rgb(52, 4, 4) 75%,
-      rgb(0, 0, 0) 100%
-    );
-    background-attachment: fixed;
-    min-height: 100vh;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Estilos de botões industriais */
-  button {
-    @apply transition-all duration-300;
-    background: rgba(255, 255, 255, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  }
-  
-  button:hover {
-    background: rgba(255, 255, 255, 0.35) !important;
-  }
-
-  /* Inputs e campos de texto */
-  input, textarea, select {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #000000 !important;
-    font-size: 15px;
-    transition: all 0.3s ease;
-  }
-  
-  input:hover, textarea:hover, select:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  }
-  
-  input:focus, textarea:focus, select:focus {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    outline: none;
-  }
-  
-  input::placeholder, textarea::placeholder {
-    color: rgba(0, 0, 0, 0.4) !important;
-  }
-
-  /* Headers com peso industrial */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+    @apply font-semibold tracking-tight;
   }
 }
 
-/* Utilitários personalizados Tecnoiso */
+@layer components {
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-online {
+    @apply bg-green-100 text-green-700;
+  }
+  
+  .status-offline {
+    @apply bg-gray-100 text-gray-600;
+  }
+  
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+  
+  .status-complete {
+    @apply bg-blue-100 text-blue-700;
+  }
+}
+
 @layer utilities {
-  .industrial-gradient {
-    background: var(--gradient-primary);
+  /* Scrollbar personalizada */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
-
-  .industrial-shadow {
-    box-shadow: var(--shadow-tecnoiso);
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
-
-  .industrial-border {
-    border: 2px solid rgb(207, 14, 14);
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
   }
-
-  /* Efeito de vidro - transparente como no site Tecnoiso */
-  .glass-effect {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(207, 14, 14, 0.2), 0 2px 8px 0 rgba(0, 0, 0, 0.3);
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
   }
-
-  /* Efeito de vidro escuro */
-  .glass-effect-dark {
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(207, 14, 14, 0.15);
-  }
-
-  /* Cards transparentes - igual calendário do site */
-  .transparent-card {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .transparent-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 24px 0 rgba(207, 14, 14, 0.25);
-  }
-
-  /* Gradiente Tecnoiso completo */
-  .tecnoiso-gradient {
-    background: var(--gradient-tecnoiso);
-  }
-
-  /* Cores individuais Tecnoiso */
-  .color-1 { 
-    background-color: rgb(207, 14, 14); 
-  }
-  .color-2 { 
-    background-color: rgb(155, 11, 11); 
-  }
-  .color-3 { 
-    background-color: rgb(104, 7, 7); 
-  }
-  .color-4 { 
-    background-color: rgb(52, 4, 4); 
-  }
-  .color-5 { 
-    background-color: rgb(0, 0, 0); 
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
   }
 }

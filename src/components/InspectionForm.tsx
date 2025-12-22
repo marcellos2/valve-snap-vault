@@ -415,17 +415,18 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   return (
     <div className="space-y-6">
       {editingRecord && onCancelEdit && (
-        <div className="flex items-center justify-end mb-6">
-          <Button variant="ghost" onClick={onCancelEdit}>
-            Cancelar
+        <div className="flex items-center justify-end">
+          <Button variant="ghost" size="sm" onClick={onCancelEdit}>
+            Cancelar edição
           </Button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Grid de fotos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <PhotoUploader
           title="INÍCIO DA INSPEÇÃO"
-          subtitle="VÁLVULA NO RECEBIMENTO"
+          subtitle="Válvula no recebimento"
           photo={photoInitial}
           onPhotoChange={setPhotoInitial}
           onRotate={() => handleRotate("initial")}
@@ -434,7 +435,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
         <PhotoUploader
           title="DURANTE A INSPEÇÃO"
-          subtitle="VÁLVULA TRABALHANDO"
+          subtitle="Válvula trabalhando"
           photo={photoDuring}
           onPhotoChange={setPhotoDuring}
           onRotate={() => handleRotate("during")}
@@ -443,7 +444,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
         <PhotoUploader
           title="TÉRMINO DA INSPEÇÃO"
-          subtitle="VÁLVULA PRONTA"
+          subtitle="Válvula pronta"
           photo={photoFinal}
           onPhotoChange={setPhotoFinal}
           onRotate={() => handleRotate("final")}
@@ -451,35 +452,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         />
       </div>
 
-      <Button
-        onClick={handleSave}
-        disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
-        className="w-full h-14 text-lg shadow-lg hover:shadow-xl transition-all"
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Salvando...
-          </>
-        ) : (
-          <>
-            <Save className="mr-2 h-5 w-5" />
-            {editingRecord ? "Atualizar Inspeção" : "Salvar Relatório"}
-          </>
-        )}
-      </Button>
-      
-      {!editingRecord && (photoInitial || photoDuring || photoFinal) && (
-        <p className="text-sm text-muted-foreground text-center mt-2">
-          💡 Você pode salvar com fotos parciais e adicionar as restantes depois
-        </p>
-      )}
-
-      {/* Campo de Código da Válvula - Destacado */}
-      <Card className="p-6 bg-card/95 backdrop-blur-md shadow-lg">
+      {/* Campo de Código da Válvula */}
+      <Card className="p-4 border border-border">
         <div>
-          <Label htmlFor="valveCode" className="text-lg">
-            Código da Válvula <span className="text-xl">*</span>
+          <Label htmlFor="valveCode" className="text-sm font-medium">
+            Código da Válvula <span className="text-destructive">*</span>
           </Label>
           <div className="mt-2">
             <Input
@@ -488,33 +465,58 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
               value={valveCode}
               onChange={(e) => setValveCode(e.target.value)}
               placeholder="Ex: VLV-001"
-              className="h-12 text-lg"
+              className="h-10"
             />
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-1.5">
             Campo obrigatório para salvar o relatório
           </p>
         </div>
       </Card>
 
+      {/* Botão Salvar */}
+      <Button
+        onClick={handleSave}
+        disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
+        className="w-full h-11"
+      >
+        {isSaving ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Salvando...
+          </>
+        ) : (
+          <>
+            <Save className="mr-2 h-4 w-4" />
+            {editingRecord ? "Atualizar Inspeção" : "Salvar Relatório"}
+          </>
+        )}
+      </Button>
+      
+      {!editingRecord && (photoInitial || photoDuring || photoFinal) && (
+        <p className="text-xs text-muted-foreground text-center">
+          Você pode salvar com fotos parciais e adicionar as restantes depois
+        </p>
+      )}
+
       {/* Seção de Textos Padronizados */}
-      <div className="space-y-4 mt-8">
-        <h3 className="text-lg font-semibold text-foreground">Textos Padronizados</h3>
+      <div className="space-y-3 pt-4 border-t border-border">
+        <h3 className="text-sm font-semibold text-foreground">Textos Padronizados</h3>
         {standardTexts.map((item) => (
-          <Card key={item.id} className="p-4 bg-card/95 backdrop-blur-md border-border shadow-md">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h4 className="font-medium text-sm text-muted-foreground mb-2">{item.title}</h4>
+          <Card key={item.id} className="p-3 border border-border">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-xs text-muted-foreground mb-1">{item.title}</h4>
                 <p className="text-sm text-foreground">{item.text}</p>
               </div>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={() => copyToClipboard(item.text, item.id)}
-                className="shrink-0 bg-transparent hover:bg-accent/20"
+                className="shrink-0 h-8 w-8"
               >
                 {copiedText === item.id ? (
-                  <Check className="h-4 w-4 text-primary" />
+                  <Check className="h-4 w-4 text-green-600" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}

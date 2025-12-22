@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import redBlackWaveOverlay from "@/assets/red-black-wave-overlay.png";
 
 interface InspectionRecord {
   id: string;
@@ -365,19 +364,15 @@ export const InspectionHistory = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Histórico de Inspeções</h2>
-      </div>
-      
       {/* Filtro de Período com Pesquisa */}
-      <Card className="p-6 bg-card/95 backdrop-blur-md border-border shadow-lg">
-        <div className="space-y-4">
+      <Card className="p-4 border border-border">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal bg-transparent border-border/50 hover:bg-accent/20 h-10",
+                  "justify-start text-left font-normal h-9 min-w-[200px]",
                   !dateRange && "text-muted-foreground"
                 )}
               >
@@ -385,7 +380,7 @@ export const InspectionHistory = ({
                 {dateRange?.from ? (
                   dateRange.to ? (
                     <>
-                      {formatDate(dateRange.from.toISOString()).split(' ')[0]} até {formatDate(dateRange.to.toISOString()).split(' ')[0]}
+                      {formatDate(dateRange.from.toISOString()).split(' ')[0]} - {formatDate(dateRange.to.toISOString()).split(' ')[0]}
                     </>
                   ) : (
                     formatDate(dateRange.from.toISOString()).split(' ')[0]
@@ -395,7 +390,7 @@ export const InspectionHistory = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-card/95 backdrop-blur-md border-border/50" align="start">
+            <PopoverContent className="w-auto p-0" align="start">
               <CalendarComponent
                 mode="range"
                 selected={dateRange}
@@ -408,14 +403,14 @@ export const InspectionHistory = ({
           </Popover>
 
           {/* Barra de Pesquisa */}
-          <div className="relative">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Pesquisar por código da válvula..."
+              placeholder="Pesquisar por código..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-transparent border-border/50 h-10"
+              className="pl-9 h-9"
             />
           </div>
 
@@ -423,164 +418,173 @@ export const InspectionHistory = ({
           {(dateRange || searchTerm) && (
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => {
                 setDateRange({ from: new Date(), to: new Date() });
                 setSearchTerm("");
               }}
-              className="w-full text-muted-foreground hover:text-foreground"
             >
-              Limpar filtros
+              Limpar
             </Button>
           )}
         </div>
       </Card>
 
       {filteredRecords.length === 0 ? (
-        <Card className="p-8 text-center bg-card/95 backdrop-blur-md border-border shadow-md">
+        <Card className="p-8 text-center border border-border">
           <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">
-            {searchTerm ? `Nenhum registro encontrado para "${searchTerm}"` : 
-             dateRange ? 'Nenhum registro para este período' : 
+            {searchTerm ? `Nenhum registro para "${searchTerm}"` : 
+             dateRange ? 'Nenhum registro neste período' : 
              'Nenhum registro encontrado'}
           </p>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredRecords.map((record) => (
-              <Card key={record.id} className="overflow-hidden hover:shadow-xl transition-all bg-card/95 backdrop-blur-md border-border shadow-md">
-                <div className="relative p-4 h-24">
-                  <img
-                    src={redBlackWaveOverlay}
-                    alt=""
-                    className="absolute top-0 left-0 w-full h-full object-cover"
-                  />
-                  <div className="relative z-10 flex items-center justify-between h-full">
-                    <div>
-                      <h3 className="font-bold text-lg text-white drop-shadow-lg">
-                        {record.valve_code || "Sem código"}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-white/90 drop-shadow-md">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(record.inspection_date)}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {onEditRecord && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => onEditRecord(record)}
-                          className="text-white hover:bg-white/20"
-                          title="Editar inspeção"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDownload(record)}
-                        className="text-white hover:bg-white/20"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(record.id)}
-                        className="text-white hover:bg-white/20"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-3">
-                  {/* Indicador de Progresso */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {record.status === 'concluido' ? (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          <span className="text-sm font-medium text-green-500">Completo</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm font-medium text-yellow-500">Em andamento</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex gap-1">
-                      <div className={`h-2 w-2 rounded-full ${record.photo_initial_url ? 'bg-white' : 'bg-white/30'}`} />
-                      <div className={`h-2 w-2 rounded-full ${record.photo_during_url ? 'bg-white' : 'bg-white/30'}`} />
-                      <div className={`h-2 w-2 rounded-full ${record.photo_final_url ? 'bg-white' : 'bg-white/30'}`} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {record.photo_initial_url && (
-                      <div className="w-full h-20 rounded overflow-hidden">
-                        <img
-                          src={record.photo_initial_url}
-                          alt="Inicial"
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
-                    {record.photo_during_url && (
-                      <div className="w-full h-20 rounded overflow-hidden">
-                        <img
-                          src={record.photo_during_url}
-                          alt="Durante"
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
-                    {record.photo_final_url && (
-                      <div className="w-full h-20 rounded overflow-hidden">
-                        <img
-                          src={record.photo_final_url}
-                          alt="Final"
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {record.notes && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {record.notes}
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
+          {/* Contador de registros */}
+          <div className="text-sm text-muted-foreground">
+            {filteredRecords.length} registro(s) encontrado(s)
           </div>
 
-          {/* Controles de Paginação - Sempre visível quando há registros */}
-          <div className="flex justify-center gap-2 mt-6">
+          {/* Tabela de registros */}
+          <Card className="border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
+                      Código
+                    </th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
+                      Data
+                    </th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
+                      Status
+                    </th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
+                      Fotos
+                    </th>
+                    <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredRecords.map((record) => (
+                    <tr key={record.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className="font-medium text-foreground">
+                          {record.valve_code || "Sem código"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {formatDate(record.inspection_date)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {record.status === 'concluido' ? (
+                          <span className="status-badge status-complete">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Completo
+                          </span>
+                        ) : (
+                          <span className="status-badge status-pending">
+                            <Clock className="h-3 w-3" />
+                            Em andamento
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1">
+                          <div className={`h-8 w-8 rounded border ${record.photo_initial_url ? 'border-border overflow-hidden' : 'border-dashed border-border bg-muted'}`}>
+                            {record.photo_initial_url && (
+                              <img
+                                src={record.photo_initial_url}
+                                alt="Inicial"
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            )}
+                          </div>
+                          <div className={`h-8 w-8 rounded border ${record.photo_during_url ? 'border-border overflow-hidden' : 'border-dashed border-border bg-muted'}`}>
+                            {record.photo_during_url && (
+                              <img
+                                src={record.photo_during_url}
+                                alt="Durante"
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            )}
+                          </div>
+                          <div className={`h-8 w-8 rounded border ${record.photo_final_url ? 'border-border overflow-hidden' : 'border-dashed border-border bg-muted'}`}>
+                            {record.photo_final_url && (
+                              <img
+                                src={record.photo_final_url}
+                                alt="Final"
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          {onEditRecord && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => onEditRecord(record)}
+                              className="h-8 w-8"
+                              title="Editar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDownload(record)}
+                            className="h-8 w-8"
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDelete(record.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Controles de Paginação */}
+          <div className="flex justify-center gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="bg-transparent"
             >
               Anterior
             </Button>
-            <span className="flex items-center px-4 text-sm text-muted-foreground">
+            <span className="flex items-center px-3 text-sm text-muted-foreground">
               Página {currentPage}
             </span>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setCurrentPage((prev) => prev + 1)}
               disabled={filteredRecords.length < RECORDS_PER_PAGE}
-              className="bg-transparent"
             >
               Próxima
             </Button>
