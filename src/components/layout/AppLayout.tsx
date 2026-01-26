@@ -107,15 +107,6 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
             <NavButton icon={Settings} label="Configurações" value="settings" />
           </nav>
 
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="bg-muted border border-border rounded-xl p-4">
-              <p className="text-xs text-muted-foreground mb-1">Versão do Sistema</p>
-              <p className="text-sm font-bold text-foreground">v2.0.0</p>
-              <div className="mt-2 pt-2 border-t border-border">
-                <p className="text-xs text-muted-foreground">© 2025 Tecnoiso</p>
-              </div>
-            </div>
-          </div>
         </aside>
 
         {/* Main content */}
