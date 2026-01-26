@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -48,7 +48,6 @@ export const InspectionHistory = ({
   onEditRecord?: (record: InspectionRecord) => void;
 }) => {
   const { toast } = useToast();
-  const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date; to?: Date }>({
@@ -59,41 +58,68 @@ export const InspectionHistory = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(20);
   const [totalRecords, setTotalRecords] = useState(0);
+  
+  // Track previous filter values to detect changes
+  const prevSearchTerm = useRef(searchTerm);
+  const prevDateRange = useRef(dateRange);
+  const prevRecordsPerPage = useRef(recordsPerPage);
 
   const totalPages = Math.ceil(totalRecords / recordsPerPage);
 
-  const loadRecords = useCallback(async () => {
+  const loadRecords = useCallback(async (page: number) => {
+    setIsLoading(true);
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const { count, error: countError } = await supabase
+      let countQuery = supabase
         .from("inspection_records")
-        .select("*", { count: 'exact', head: true })
-        .gte("inspection_date", today.toISOString())
-        .lt("inspection_date", tomorrow.toISOString());
+        .select("*", { count: 'exact', head: true });
+      
+      let query = supabase
+        .from("inspection_records")
+        .select("*");
+      
+      if (searchTerm.trim() !== "") {
+        countQuery = countQuery.ilike("valve_code", `%${searchTerm}%`);
+        query = query.ilike("valve_code", `%${searchTerm}%`);
+      } else if (dateRange?.from) {
+        const start = new Date(dateRange.from);
+        start.setHours(0, 0, 0, 0);
+        
+        if (dateRange.to) {
+          const end = new Date(dateRange.to);
+          end.setHours(23, 59, 59, 999);
+          countQuery = countQuery
+            .gte("inspection_date", start.toISOString())
+            .lte("inspection_date", end.toISOString());
+          query = query
+            .gte("inspection_date", start.toISOString())
+            .lte("inspection_date", end.toISOString());
+        } else {
+          const end = new Date(start);
+          end.setHours(23, 59, 59, 999);
+          countQuery = countQuery
+            .gte("inspection_date", start.toISOString())
+            .lte("inspection_date", end.toISOString());
+          query = query
+            .gte("inspection_date", start.toISOString())
+            .lte("inspection_date", end.toISOString());
+        }
+      }
 
+      const { count, error: countError } = await countQuery;
       if (countError) throw countError;
       setTotalRecords(count || 0);
-
-      const from = (currentPage - 1) * recordsPerPage;
+      
+      const from = (page - 1) * recordsPerPage;
       const to = from + recordsPerPage - 1;
-
-      const { data, error } = await supabase
-        .from("inspection_records")
-        .select("*")
-        .gte("inspection_date", today.toISOString())
-        .lt("inspection_date", tomorrow.toISOString())
+      
+      const { data, error } = await query
         .order("inspection_date", { ascending: false })
         .range(from, to);
 
       if (error) throw error;
-      setRecords((data || []) as InspectionRecord[]);
       setFilteredRecords((data || []) as InspectionRecord[]);
     } catch (error) {
-      console.error("Erro ao carregar histórico:", error);
+      console.error("Erro ao carregar registros:", error);
       toast({
         title: "Erro",
         description: "Falha ao carregar histórico",
@@ -102,75 +128,32 @@ export const InspectionHistory = ({
     } finally {
       setIsLoading(false);
     }
-  }, [toast, currentPage, recordsPerPage]);
+  }, [searchTerm, dateRange, recordsPerPage, toast]);
 
+  // Load records when page changes
   useEffect(() => {
-    loadRecords();
-  }, [refreshTrigger, loadRecords]);
-
-  useEffect(() => {
-    const loadFilteredRecords = async () => {
-      try {
-        let countQuery = supabase
-          .from("inspection_records")
-          .select("*", { count: 'exact', head: true });
-        
-        let query = supabase
-          .from("inspection_records")
-          .select("*");
-        
-        if (searchTerm.trim() !== "") {
-          countQuery = countQuery.ilike("valve_code", `%${searchTerm}%`);
-          query = query.ilike("valve_code", `%${searchTerm}%`);
-        } else if (dateRange?.from) {
-          const start = new Date(dateRange.from);
-          start.setHours(0, 0, 0, 0);
-          
-          if (dateRange.to) {
-            const end = new Date(dateRange.to);
-            end.setHours(23, 59, 59, 999);
-            countQuery = countQuery
-              .gte("inspection_date", start.toISOString())
-              .lte("inspection_date", end.toISOString());
-            query = query
-              .gte("inspection_date", start.toISOString())
-              .lte("inspection_date", end.toISOString());
-          } else {
-            const end = new Date(start);
-            end.setHours(23, 59, 59, 999);
-            countQuery = countQuery
-              .gte("inspection_date", start.toISOString())
-              .lte("inspection_date", end.toISOString());
-            query = query
-              .gte("inspection_date", start.toISOString())
-              .lte("inspection_date", end.toISOString());
-          }
-        }
-
-        const { count, error: countError } = await countQuery;
-        if (countError) throw countError;
-        setTotalRecords(count || 0);
-        
-        const from = (currentPage - 1) * recordsPerPage;
-        const to = from + recordsPerPage - 1;
-        
-        const { data, error } = await query
-          .order("inspection_date", { ascending: false })
-          .range(from, to);
-
-        if (error) throw error;
-        setFilteredRecords((data || []) as InspectionRecord[]);
-      } catch (error) {
-        console.error("Erro ao filtrar registros:", error);
-      }
-    };
-
-    loadFilteredRecords();
-  }, [searchTerm, dateRange, currentPage, recordsPerPage]);
+    loadRecords(currentPage);
+  }, [currentPage, refreshTrigger]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    const searchChanged = prevSearchTerm.current !== searchTerm;
+    const dateChanged = prevDateRange.current !== dateRange;
+    const pageSizeChanged = prevRecordsPerPage.current !== recordsPerPage;
+    
+    prevSearchTerm.current = searchTerm;
+    prevDateRange.current = dateRange;
+    prevRecordsPerPage.current = recordsPerPage;
+    
+    if (searchChanged || dateChanged || pageSizeChanged) {
+      if (currentPage === 1) {
+        // Already on page 1, just reload
+        loadRecords(1);
+      } else {
+        // Go to page 1, which will trigger the other useEffect
+        setCurrentPage(1);
+      }
+    }
   }, [searchTerm, dateRange, recordsPerPage]);
 
   const handleDelete = async (id: string) => {
@@ -185,7 +168,7 @@ export const InspectionHistory = ({
       if (error) throw error;
 
       toast({ title: "Registro excluído" });
-      loadRecords();
+      loadRecords(currentPage);
     } catch (error) {
       toast({
         title: "Erro",
@@ -365,7 +348,11 @@ export const InspectionHistory = ({
               <CalendarComponent
                 mode="range"
                 selected={dateRange}
-                onSelect={(range: any) => setDateRange(range)}
+                onSelect={(range: any) => {
+                  if (range) {
+                    setDateRange(range);
+                  }
+                }}
                 initialFocus
                 numberOfMonths={2}
               />
