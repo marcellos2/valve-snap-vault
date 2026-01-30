@@ -72,13 +72,11 @@ const Install = () => {
         <div className="max-w-md w-full text-center space-y-8">
           {/* Logo */}
           <div className="flex justify-center">
-            <div className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center shadow-xl">
-              <img 
-                src="/logo-192.png" 
-                alt="Tecnoiso" 
-                className="w-16 h-16 object-contain"
-              />
-            </div>
+            <img 
+              src="/logo-192.png" 
+              alt="Tecnoiso" 
+              className="w-28 h-28 object-contain drop-shadow-xl"
+            />
           </div>
 
           {/* Title */}
@@ -93,9 +91,9 @@ const Install = () => {
 
           {/* Status */}
           {isInstalled ? (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6 space-y-3">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
-              <p className="text-green-600 dark:text-green-400 font-medium">
+            <div className="bg-success/10 border border-success/30 rounded-xl p-6 space-y-3">
+              <CheckCircle className="w-12 h-12 text-success mx-auto" />
+              <p className="text-success font-medium">
                 Aplicativo já instalado!
               </p>
               <p className="text-sm text-muted-foreground">
