@@ -206,23 +206,22 @@ const Install = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {deferredPrompt ? (
-                <Button
-                  onClick={handleInstall}
-                  size="lg"
-                  className="w-full h-14 text-lg gap-3 rounded-xl"
-                >
-                  <Monitor className="w-6 h-6" />
-                  Instalar no PC
-                </Button>
-              ) : (
+              {/* Botão de instalar sempre visível para desktop */}
+              <Button
+                onClick={deferredPrompt ? handleInstall : undefined}
+                size="lg"
+                className="w-full h-14 text-lg gap-3 rounded-xl"
+              >
+                <Monitor className="w-6 h-6" />
+                Instalar no PC
+              </Button>
+              
+              {/* Instruções caso o botão não funcione */}
+              {!deferredPrompt && (
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Monitor className="w-6 h-6 text-primary" />
-                    <p className="text-foreground font-medium">
-                      Instalar no Desktop:
-                    </p>
-                  </div>
+                  <p className="text-foreground font-medium text-center text-sm">
+                    Se o botão não funcionar, siga os passos:
+                  </p>
                   <ol className="space-y-3 text-sm text-muted-foreground">
                     <li className="flex items-start gap-3">
                       <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
