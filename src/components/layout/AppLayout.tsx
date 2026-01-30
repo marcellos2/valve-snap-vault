@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
-import { ClipboardCheck, History, FileText, Settings, Menu, X, User, Activity, Moon, Sun } from "lucide-react";
+import { ClipboardCheck, History, FileText, Settings, Menu, X, User, Activity, Moon, Sun, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : true;
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -57,8 +59,8 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
               </button>
 
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105">
-                  <ClipboardCheck className="w-5 h-5 text-primary-foreground" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden bg-card border border-border">
+                  <img src="/logo-192.png" alt="Tecnoiso" className="w-8 h-8 object-contain" />
                 </div>
                 <div>
                   <h1 className="text-base font-bold text-foreground">Tecnoiso</h1>
@@ -67,7 +69,26 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/install")}
+                className="rounded-xl gap-2 hidden sm:flex"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden md:inline">Baixar App</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/install")}
+                className="rounded-xl sm:hidden"
+              >
+                <Download className="w-5 h-5" />
+              </Button>
+              
               <Button
                 variant="ghost"
                 size="icon"
@@ -77,9 +98,9 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
               
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 rounded-xl border border-green-500/20">
-                <Activity className="w-4 h-4 text-green-600 dark:text-green-400 animate-pulse" />
-                <span className="text-xs text-green-700 dark:text-green-300 font-medium">Online</span>
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-xl border border-success/20">
+                <Activity className="w-4 h-4 text-success animate-pulse" />
+                <span className="text-xs text-success font-medium">Online</span>
               </div>
               
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center cursor-pointer hover:scale-105 transition-all duration-200 shadow-lg">
