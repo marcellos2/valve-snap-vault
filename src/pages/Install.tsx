@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Download, Smartphone, CheckCircle, ArrowLeft, Share, MoreVertical } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Download, Smartphone, CheckCircle, ArrowLeft, Share, MoreVertical, Monitor, Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -8,23 +8,32 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+type DeviceType = "ios" | "android" | "desktop-chrome" | "desktop-other";
+
 const Install = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Detectar iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(isIOSDevice);
+  const deviceType = useMemo<DeviceType>(() => {
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    const isChrome = /Chrome/.test(ua) && !/Edge|Edg/.test(ua);
+    
+    if (isIOS) return "ios";
+    if (isAndroid) return "android";
+    if (isChrome) return "desktop-chrome";
+    return "desktop-other";
+  }, []);
 
+  useEffect(() => {
     // Verificar se já está instalado
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
 
-    // Capturar evento de instalação (Android/Desktop)
+    // Capturar evento de instalação (Android/Desktop Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -100,7 +109,16 @@ const Install = () => {
                 Você pode acessar o app pela tela inicial do seu dispositivo.
               </p>
             </div>
-          ) : isIOS ? (
+          ) : deferredPrompt ? (
+            <Button
+              onClick={handleInstall}
+              size="lg"
+              className="w-full h-14 text-lg gap-3 rounded-xl"
+            >
+              <Download className="w-6 h-6" />
+              Instalar Aplicativo
+            </Button>
+          ) : deviceType === "ios" ? (
             <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
               <p className="text-foreground font-medium text-center">
                 Para instalar no iPhone/iPad:
@@ -122,16 +140,7 @@ const Install = () => {
                 </li>
               </ol>
             </div>
-          ) : deferredPrompt ? (
-            <Button
-              onClick={handleInstall}
-              size="lg"
-              className="w-full h-14 text-lg gap-3 rounded-xl"
-            >
-              <Download className="w-6 h-6" />
-              Instalar Aplicativo
-            </Button>
-          ) : (
+          ) : deviceType === "android" ? (
             <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
               <p className="text-foreground font-medium text-center">
                 Para instalar no Android:
@@ -153,6 +162,52 @@ const Install = () => {
                 </li>
               </ol>
             </div>
+          ) : deviceType === "desktop-chrome" ? (
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Chrome className="w-6 h-6 text-primary" />
+                <p className="text-foreground font-medium">
+                  Instalar no Google Chrome:
+                </p>
+              </div>
+              <ol className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                  <span>Clique no ícone de instalação <Download className="w-4 h-4 inline" /> na barra de endereço (à direita)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                  <span>Ou acesse o menu <MoreVertical className="w-4 h-4 inline" /> e clique em "Instalar Tecnoiso..."</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                  <span>Confirme clicando em "Instalar" na janela que aparecer</span>
+                </li>
+              </ol>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Monitor className="w-6 h-6 text-primary" />
+                <p className="text-foreground font-medium">
+                  Instalar no Desktop:
+                </p>
+              </div>
+              <ol className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                  <span>Use o <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> para melhor experiência</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                  <span>Procure o ícone de instalação <Download className="w-4 h-4 inline" /> na barra de endereço</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                  <span>Ou acesse o menu do navegador e clique em "Instalar como aplicativo"</span>
+                </li>
+              </ol>
+            </div>
           )}
 
           {/* Features */}
@@ -168,6 +223,14 @@ const Install = () => {
               <p className="text-muted-foreground text-xs">Sem internet</p>
             </div>
           </div>
+
+          {/* Device indicator */}
+          <p className="text-xs text-muted-foreground">
+            {deviceType === "ios" && "📱 Detectado: iPhone/iPad"}
+            {deviceType === "android" && "📱 Detectado: Android"}
+            {deviceType === "desktop-chrome" && "💻 Detectado: Desktop (Chrome)"}
+            {deviceType === "desktop-other" && "💻 Detectado: Desktop"}
+          </p>
         </div>
       </main>
     </div>
