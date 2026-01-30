@@ -59,9 +59,16 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
               </button>
 
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 overflow-hidden bg-card border border-border">
-                  <img src="/logo-192.png" alt="Tecnoiso" className="w-8 h-8 object-contain" />
-                </div>
+                <img 
+                  src="/logo-192.png" 
+                  alt="Tecnoiso" 
+                  className="w-10 h-10 object-contain hidden dark:block" 
+                />
+                <img 
+                  src="/logo-192.png" 
+                  alt="Tecnoiso" 
+                  className="w-10 h-10 object-contain dark:hidden" 
+                />
                 <div>
                   <h1 className="text-base font-bold text-foreground">Tecnoiso</h1>
                   <p className="text-xs text-muted-foreground hidden sm:block">Sistema de Inspeção</p>
