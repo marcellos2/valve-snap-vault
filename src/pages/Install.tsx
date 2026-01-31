@@ -205,39 +205,27 @@ const Install = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Botão de instalar sempre visível para desktop */}
-              <Button
-                onClick={deferredPrompt ? handleInstall : undefined}
-                size="lg"
-                className="w-full h-14 text-lg gap-3 rounded-xl"
-              >
-                <Monitor className="w-6 h-6" />
-                Instalar no PC
-              </Button>
-              
-              {/* Instruções caso o botão não funcione */}
-              {!deferredPrompt && (
-                <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
-                  <p className="text-foreground font-medium text-center text-sm">
-                    Se o botão não funcionar, siga os passos:
-                  </p>
-                  <ol className="space-y-3 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-3">
-                      <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                      <span>Use o <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong></span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                      <span>Clique no ícone <Download className="w-4 h-4 inline" /> na barra de endereço (à direita)</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                      <span>Ou acesse o menu <MoreVertical className="w-4 h-4 inline" /> → "Instalar Tecnoiso..."</span>
-                    </li>
-                  </ol>
-                </div>
-              )}
+            <div className="bg-card border border-border rounded-xl p-6 space-y-4 text-left">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Monitor className="w-6 h-6 text-primary" />
+                <p className="text-foreground font-medium">
+                  Instalar no PC:
+                </p>
+              </div>
+              <ol className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                  <span>Use o <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                  <span>Clique no ícone <Download className="w-4 h-4 inline" /> na barra de endereço</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                  <span>Ou acesse o menu <MoreVertical className="w-4 h-4 inline" /> → "Instalar Tecnoiso..."</span>
+                </li>
+              </ol>
             </div>
           )}
 
