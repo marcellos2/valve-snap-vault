@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Save, Loader2, Copy, Check, AlertCircle } from "lucide-react";
+import { Save, Loader2, Copy, Check, AlertCircle, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useOfflineSync } from "@/hooks/use-offline-sync";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
@@ -24,6 +25,7 @@ interface InspectionFormProps {
 
 export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: InspectionFormProps) => {
   const { toast } = useToast();
+  const { isOnline, savePendingInspection } = useOfflineSync();
   const valveCodeRef = useRef<HTMLInputElement>(null);
   const [valveCode, setValveCode] = useState(editingRecord?.valve_code || "");
   const [photoInitial, setPhotoInitial] = useState<string | null>(editingRecord?.photo_initial_url || null);
@@ -202,6 +204,28 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     }
 
     setIsSaving(true);
+
+    // If offline and not editing, save locally
+    if (!isOnline && !editingRecord) {
+      const saved = savePendingInspection({
+        valveCode,
+        photoInitial,
+        photoDuring,
+        photoFinal,
+      });
+
+      if (saved) {
+        setValveCode("");
+        setPhotoInitial(null);
+        setPhotoDuring(null);
+        setPhotoFinal(null);
+        setRotations({ initial: 0, during: 0, final: 0 });
+        onSaved();
+      }
+      
+      setIsSaving(false);
+      return;
+    }
 
     try {
       let photoInitialUrl = editingRecord?.photo_initial_url || null;
@@ -401,6 +425,15 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         </div>
       </Card>
 
+      {!isOnline && !editingRecord && (
+        <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-400">
+          <WifiOff className="h-4 w-4 flex-shrink-0" />
+          <p className="text-sm">
+            Você está offline. A inspeção será salva localmente e sincronizada quando a conexão for restaurada.
+          </p>
+        </div>
+      )}
+
       <Button
         onClick={handleSave}
         disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
@@ -411,6 +444,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Salvando...
           </>
+        ) : !isOnline && !editingRecord ? (
+          <>
+            <WifiOff className="mr-2 h-5 w-5" />
+            Salvar Offline
+          </>
         ) : (
           <>
             <Save className="mr-2 h-5 w-5" />
@@ -419,8 +457,8 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         )}
       </Button>
       
-      {!editingRecord && (photoInitial || photoDuring || photoFinal) && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+      {!editingRecord && (photoInitial || photoDuring || photoFinal) && isOnline && (
+        <p className="text-xs text-muted-foreground text-center bg-muted/50 border border-border rounded-lg p-3">
           💡 Você pode salvar com fotos parciais e adicionar as restantes depois
         </p>
       )}
