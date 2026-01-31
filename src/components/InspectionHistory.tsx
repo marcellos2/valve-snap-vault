@@ -50,6 +50,7 @@ export const InspectionHistory = ({
   const { toast } = useToast();
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date; to?: Date }>({
     from: new Date(),
     to: new Date()
@@ -59,14 +60,29 @@ export const InspectionHistory = ({
   const [recordsPerPage, setRecordsPerPage] = useState(20);
   const [totalRecords, setTotalRecords] = useState(0);
   
-  // Track previous filter values to detect changes
-  const prevSearchTerm = useRef(searchTerm);
-  const prevDateRange = useRef(dateRange);
-  const prevRecordsPerPage = useRef(recordsPerPage);
+  // Debounce for search input
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalPages = Math.ceil(totalRecords / recordsPerPage);
 
-  const loadRecords = useCallback(async (page: number) => {
+  // Debounce search term to prevent excessive API calls
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  const loadRecords = useCallback(async (page: number, search: string, dates: { from: Date; to?: Date }, pageSize: number) => {
     setIsLoading(true);
     try {
       let countQuery = supabase
@@ -77,15 +93,15 @@ export const InspectionHistory = ({
         .from("inspection_records")
         .select("*");
       
-      if (searchTerm.trim() !== "") {
-        countQuery = countQuery.ilike("valve_code", `%${searchTerm}%`);
-        query = query.ilike("valve_code", `%${searchTerm}%`);
-      } else if (dateRange?.from) {
-        const start = new Date(dateRange.from);
+      if (search.trim() !== "") {
+        countQuery = countQuery.ilike("valve_code", `%${search}%`);
+        query = query.ilike("valve_code", `%${search}%`);
+      } else if (dates?.from) {
+        const start = new Date(dates.from);
         start.setHours(0, 0, 0, 0);
         
-        if (dateRange.to) {
-          const end = new Date(dateRange.to);
+        if (dates.to) {
+          const end = new Date(dates.to);
           end.setHours(23, 59, 59, 999);
           countQuery = countQuery
             .gte("inspection_date", start.toISOString())
@@ -109,8 +125,8 @@ export const InspectionHistory = ({
       if (countError) throw countError;
       setTotalRecords(count || 0);
       
-      const from = (page - 1) * recordsPerPage;
-      const to = from + recordsPerPage - 1;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
       
       const { data, error } = await query
         .order("inspection_date", { ascending: false })
@@ -128,33 +144,17 @@ export const InspectionHistory = ({
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, dateRange, recordsPerPage, toast]);
+  }, [toast]);
 
-  // Load records when page changes
+  // Main effect: Load records when dependencies change
   useEffect(() => {
-    loadRecords(currentPage);
-  }, [currentPage, refreshTrigger]);
+    loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
+  }, [currentPage, debouncedSearchTerm, dateRange, recordsPerPage, refreshTrigger, loadRecords]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (except page itself)
   useEffect(() => {
-    const searchChanged = prevSearchTerm.current !== searchTerm;
-    const dateChanged = prevDateRange.current !== dateRange;
-    const pageSizeChanged = prevRecordsPerPage.current !== recordsPerPage;
-    
-    prevSearchTerm.current = searchTerm;
-    prevDateRange.current = dateRange;
-    prevRecordsPerPage.current = recordsPerPage;
-    
-    if (searchChanged || dateChanged || pageSizeChanged) {
-      if (currentPage === 1) {
-        // Already on page 1, just reload
-        loadRecords(1);
-      } else {
-        // Go to page 1, which will trigger the other useEffect
-        setCurrentPage(1);
-      }
-    }
-  }, [searchTerm, dateRange, recordsPerPage]);
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, dateRange, recordsPerPage]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente excluir este registro?")) return;
@@ -168,7 +168,7 @@ export const InspectionHistory = ({
       if (error) throw error;
 
       toast({ title: "Registro excluído" });
-      loadRecords(currentPage);
+      loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
     } catch (error) {
       toast({
         title: "Erro",
