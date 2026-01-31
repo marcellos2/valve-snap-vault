@@ -308,13 +308,8 @@ export const InspectionHistory = ({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-sm text-muted-foreground">Carregando...</p>
-      </div>
-    );
-  }
+  // Remove early return during loading to prevent focus loss on search input
+  const showInitialLoading = isLoading && filteredRecords.length === 0 && !searchTerm && !debouncedSearchTerm;
 
   return (
     <div className="space-y-4">
@@ -367,7 +362,13 @@ export const InspectionHistory = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-10"
+              autoComplete="off"
             />
+            {isLoading && searchTerm && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -456,7 +457,11 @@ export const InspectionHistory = ({
       </div>
 
       {/* Records */}
-      {filteredRecords.length === 0 ? (
+      {showInitialLoading ? (
+        <div className="bg-card border border-border rounded-lg p-12 text-center">
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        </div>
+      ) : filteredRecords.length === 0 ? (
         <div className="bg-card border border-border rounded-lg p-12 text-center">
           <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
