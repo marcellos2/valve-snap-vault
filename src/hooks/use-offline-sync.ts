@@ -1,14 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-interface PendingPhoto {
-  id: string;
-  photoData: string;
-  fileName: string;
-  type: 'initial' | 'during' | 'final';
-  timestamp: number;
-}
 
 interface PendingInspection {
   id: string;
@@ -17,92 +9,30 @@ interface PendingInspection {
   photoDuring: string | null;
   photoFinal: string | null;
   createdAt: number;
-  status: 'pending' | 'syncing' | 'failed';
+  status: 'pending' | 'syncing' | 'synced' | 'failed';
 }
 
 const PENDING_INSPECTIONS_KEY = 'pending_inspections';
-const PENDING_PHOTOS_KEY = 'pending_photos';
 
 export const useOfflineSync = () => {
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const syncingRef = useRef(false);
+  const lastSyncAttempt = useRef<number>(0);
 
-  // Update online status
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast({
-        title: "Conexão restaurada",
-        description: "Sincronizando dados pendentes...",
-      });
-      syncPendingData();
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast({
-        title: "Sem conexão",
-        description: "Os dados serão salvos localmente e sincronizados quando a conexão for restaurada.",
-        variant: "destructive",
-      });
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Load pending count on mount
-    updatePendingCount();
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const updatePendingCount = () => {
+  const updatePendingCount = useCallback(() => {
     try {
       const pending = localStorage.getItem(PENDING_INSPECTIONS_KEY);
       const inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
-      setPendingCount(inspections.length);
+      // Only count pending items, not synced or syncing
+      const pendingItems = inspections.filter(i => i.status === 'pending' || i.status === 'failed');
+      setPendingCount(pendingItems.length);
     } catch {
       setPendingCount(0);
     }
-  };
-
-  const savePendingInspection = useCallback((inspection: Omit<PendingInspection, 'id' | 'createdAt' | 'status'>) => {
-    try {
-      const pending = localStorage.getItem(PENDING_INSPECTIONS_KEY);
-      const inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
-      
-      const newInspection: PendingInspection = {
-        ...inspection,
-        id: `pending-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        createdAt: Date.now(),
-        status: 'pending',
-      };
-      
-      inspections.push(newInspection);
-      localStorage.setItem(PENDING_INSPECTIONS_KEY, JSON.stringify(inspections));
-      updatePendingCount();
-      
-      toast({
-        title: "Salvo localmente",
-        description: "A inspeção será enviada quando a conexão for restaurada.",
-      });
-      
-      return true;
-    } catch (error) {
-      console.error("Erro ao salvar localmente:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar localmente. Verifique o espaço disponível.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [toast]);
+  }, []);
 
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
     try {
@@ -141,22 +71,46 @@ export const useOfflineSync = () => {
   };
 
   const syncPendingData = useCallback(async () => {
-    if (!navigator.onLine || isSyncing) return;
+    // Prevent multiple concurrent syncs
+    if (!navigator.onLine || syncingRef.current) {
+      return;
+    }
 
+    // Debounce: prevent sync if last attempt was less than 2 seconds ago
+    const now = Date.now();
+    if (now - lastSyncAttempt.current < 2000) {
+      return;
+    }
+    lastSyncAttempt.current = now;
+
+    syncingRef.current = true;
     setIsSyncing(true);
     
     try {
       const pending = localStorage.getItem(PENDING_INSPECTIONS_KEY);
-      const inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
+      let inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
       
-      if (inspections.length === 0) {
+      // Only sync pending or failed items
+      const toSync = inspections.filter(i => i.status === 'pending' || i.status === 'failed');
+      
+      if (toSync.length === 0) {
+        syncingRef.current = false;
         setIsSyncing(false);
         return;
       }
 
+      // Mark items as syncing to prevent duplicate syncs
+      inspections = inspections.map(i => 
+        (i.status === 'pending' || i.status === 'failed') 
+          ? { ...i, status: 'syncing' as const }
+          : i
+      );
+      localStorage.setItem(PENDING_INSPECTIONS_KEY, JSON.stringify(inspections));
+
       const successful: string[] = [];
+      const failed: string[] = [];
       
-      for (const inspection of inspections) {
+      for (const inspection of toSync) {
         try {
           // Upload photos
           let photoInitialUrl: string | null = null;
@@ -185,36 +139,126 @@ export const useOfflineSync = () => {
 
           if (!error) {
             successful.push(inspection.id);
+          } else {
+            failed.push(inspection.id);
           }
         } catch (err) {
           console.error("Erro ao sincronizar inspeção:", err);
+          failed.push(inspection.id);
         }
       }
 
-      // Remove successfully synced inspections
+      // Update local storage: remove successful, mark failed
+      const currentData = localStorage.getItem(PENDING_INSPECTIONS_KEY);
+      let currentInspections: PendingInspection[] = currentData ? JSON.parse(currentData) : [];
+      
+      currentInspections = currentInspections
+        .filter(i => !successful.includes(i.id))
+        .map(i => failed.includes(i.id) ? { ...i, status: 'failed' as const } : i);
+      
+      localStorage.setItem(PENDING_INSPECTIONS_KEY, JSON.stringify(currentInspections));
+      updatePendingCount();
+      
       if (successful.length > 0) {
-        const remaining = inspections.filter(i => !successful.includes(i.id));
-        localStorage.setItem(PENDING_INSPECTIONS_KEY, JSON.stringify(remaining));
-        updatePendingCount();
-        
         toast({
           title: "Sincronização concluída",
           description: `${successful.length} inspeção(ões) enviada(s) com sucesso.`,
         });
       }
+      
+      if (failed.length > 0) {
+        toast({
+          title: "Algumas inspeções falharam",
+          description: `${failed.length} inspeção(ões) serão reenviadas automaticamente.`,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Erro na sincronização:", error);
     } finally {
+      syncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [isSyncing, toast]);
+  }, [toast, updatePendingCount]);
 
-  // Auto-sync when coming online
+  // Update online status
   useEffect(() => {
-    if (isOnline && pendingCount > 0) {
-      syncPendingData();
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: "Conexão restaurada",
+        description: "Verificando dados pendentes...",
+      });
+      // Small delay to ensure network is stable
+      setTimeout(() => {
+        syncPendingData();
+      }, 1000);
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: "Sem conexão",
+        description: "Os dados serão salvos localmente.",
+        variant: "destructive",
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Load pending count on mount
+    updatePendingCount();
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncPendingData, toast, updatePendingCount]);
+
+  const savePendingInspection = useCallback((inspection: Omit<PendingInspection, 'id' | 'createdAt' | 'status'>) => {
+    try {
+      const pending = localStorage.getItem(PENDING_INSPECTIONS_KEY);
+      const inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
+      
+      const newInspection: PendingInspection = {
+        ...inspection,
+        id: `pending-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        createdAt: Date.now(),
+        status: 'pending',
+      };
+      
+      inspections.push(newInspection);
+      localStorage.setItem(PENDING_INSPECTIONS_KEY, JSON.stringify(inspections));
+      updatePendingCount();
+      
+      toast({
+        title: "Salvo localmente",
+        description: "A inspeção será enviada quando a conexão for restaurada.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao salvar localmente:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar localmente. Verifique o espaço disponível.",
+        variant: "destructive",
+      });
+      return false;
     }
-  }, [isOnline]);
+  }, [toast, updatePendingCount]);
+
+  // Auto-sync on mount if online and has pending data
+  useEffect(() => {
+    if (isOnline && pendingCount > 0 && !syncingRef.current) {
+      // Delay initial sync to prevent race conditions
+      const timeout = setTimeout(() => {
+        syncPendingData();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOnline, pendingCount, syncPendingData]);
 
   return {
     isOnline,
