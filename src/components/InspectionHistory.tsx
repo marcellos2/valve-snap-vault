@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Calendar, FileText, Trash2, Download, Search, Edit, CheckCircle2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, FileText, Trash2, Download, Search, Edit, CheckCircle2, Clock, ChevronLeft, ChevronRight, X, Filter, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface InspectionRecord {
   id: string;
@@ -40,6 +41,178 @@ const formatDateForFilename = (dateString: string): string => {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
+// Optimized image component with intersection observer
+const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!imgRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "100px" }
+    );
+
+    observer.observe(imgRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={imgRef} className={cn("relative overflow-hidden", className)}>
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-muted animate-pulse" />
+      )}
+      {isInView && (
+        <img
+          src={src}
+          alt={alt}
+          className={cn(
+            "w-full h-full object-cover transition-opacity duration-300",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
+          onLoad={() => setIsLoaded(true)}
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+    </div>
+  );
+};
+
+// Record card component for better performance
+const RecordCard = ({ 
+  record, 
+  onEdit, 
+  onDownload, 
+  onDelete 
+}: { 
+  record: InspectionRecord; 
+  onEdit?: (record: InspectionRecord) => void;
+  onDownload: (record: InspectionRecord) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const photos = useMemo(() => [
+    record.photo_initial_url,
+    record.photo_during_url,
+    record.photo_final_url
+  ], [record.photo_initial_url, record.photo_during_url, record.photo_final_url]);
+
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group">
+      {/* Header */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-foreground truncate text-base group-hover:text-primary transition-colors">
+              {record.valve_code || "Sem código"}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="truncate">{formatDate(record.inspection_date)}</span>
+            </div>
+          </div>
+          <div className={cn(
+            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all",
+            record.status === 'concluido' 
+              ? "bg-success/10 text-success border border-success/20" 
+              : "bg-warning/10 text-warning border border-warning/20"
+          )}>
+            {record.status === 'concluido' ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            ) : (
+              <Clock className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">{record.status === 'concluido' ? 'Concluído' : 'Pendente'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Photos Preview */}
+      <div className="grid grid-cols-3 gap-0.5 bg-border">
+        {photos.map((url, i) => (
+          <div key={i} className="aspect-square bg-muted">
+            {url ? (
+              <LazyImage 
+                src={url} 
+                alt={`Foto ${i + 1}`} 
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                <div className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/30" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 p-2 bg-muted/30">
+        {onEdit && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onEdit(record)}
+            className="flex-1 h-9 text-xs hover:bg-primary/10 hover:text-primary transition-colors"
+          >
+            <Edit className="h-3.5 w-3.5 mr-1.5" />
+            Editar
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onDownload(record)}
+          className="flex-1 h-9 text-xs hover:bg-primary/10 hover:text-primary transition-colors"
+        >
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          Baixar
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onDelete(record.id)}
+          className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Skeleton loader for cards
+const CardSkeleton = () => (
+  <div className="bg-card border border-border rounded-xl overflow-hidden animate-pulse">
+    <div className="p-4 border-b border-border">
+      <div className="flex items-start justify-between">
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+        <Skeleton className="h-6 w-20 rounded-lg" />
+      </div>
+    </div>
+    <div className="grid grid-cols-3 gap-0.5 bg-border">
+      {[1, 2, 3].map((i) => (
+        <Skeleton key={i} className="aspect-square" />
+      ))}
+    </div>
+    <div className="flex items-center gap-1 p-2 bg-muted/30">
+      <Skeleton className="flex-1 h-9" />
+      <Skeleton className="flex-1 h-9" />
+      <Skeleton className="h-9 w-9" />
+    </div>
+  </div>
+);
+
 export const InspectionHistory = ({ 
   refreshTrigger, 
   onEditRecord 
@@ -59,13 +232,14 @@ export const InspectionHistory = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(20);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Debounce for search input
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalPages = Math.ceil(totalRecords / recordsPerPage);
 
-  // Debounce search term to prevent excessive API calls
+  // Debounce search term
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -143,6 +317,7 @@ export const InspectionHistory = ({
       });
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, [toast]);
 
@@ -151,10 +326,20 @@ export const InspectionHistory = ({
     loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
   }, [currentPage, debouncedSearchTerm, dateRange, recordsPerPage, refreshTrigger, loadRecords]);
 
-  // Reset to page 1 when filters change (except page itself)
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, dateRange, recordsPerPage]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+    searchInputRef.current?.focus();
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente excluir este registro?")) return;
@@ -195,6 +380,8 @@ export const InspectionHistory = ({
 
   const handleDownload = async (record: InspectionRecord) => {
     try {
+      toast({ title: "Gerando imagem...", description: "Aguarde um momento" });
+      
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d", { willReadFrequently: false });
       if (!ctx) throw new Error("Não foi possível criar contexto");
@@ -308,149 +495,181 @@ export const InspectionHistory = ({
     }
   };
 
-  // Remove early return during loading to prevent focus loss on search input
   const showInitialLoading = isLoading && filteredRecords.length === 0 && !searchTerm && !debouncedSearchTerm;
 
+  // Pagination numbers
+  const paginationNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, 5];
+    }
+    
+    if (currentPage >= totalPages - 2) {
+      return [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    
+    return [currentPage - 2, currentPage - 1, currentPage, currentPage + 1, currentPage + 2];
+  }, [currentPage, totalPages]);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in">
       {/* Filters */}
-      <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "flex-1 justify-start text-left font-normal h-10",
-                  !dateRange && "text-muted-foreground"
-                )}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {formatDate(dateRange.from.toISOString()).split(' ')[0]} — {formatDate(dateRange.to.toISOString()).split(' ')[0]}
-                    </>
-                  ) : (
-                    formatDate(dateRange.from.toISOString()).split(' ')[0]
-                  )
-                ) : (
-                  <span>Selecione o período</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                mode="range"
-                selected={dateRange}
-                onSelect={(range: any) => {
-                  if (range) {
-                    setDateRange(range);
-                  }
-                }}
-                initialFocus
-                numberOfMonths={2}
+      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+        <div className="flex flex-col gap-4">
+          {/* Search and Date */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Pesquisar por código..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-10 h-11 bg-background border-border focus:border-primary transition-colors"
+                autoComplete="off"
               />
-            </PopoverContent>
-          </Popover>
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              {isLoading && searchTerm && (
+                <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
 
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Pesquisar código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10"
-              autoComplete="off"
-            />
-            {isLoading && searchTerm && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Pagination Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-border">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Exibir</span>
-            <Select
-              value={String(recordsPerPage)}
-              onValueChange={(value) => setRecordsPerPage(Number(value))}
-            >
-              <SelectTrigger className="w-20 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>por página</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {totalRecords > 0 
-                ? `${(currentPage - 1) * recordsPerPage + 1}-${Math.min(currentPage * recordsPerPage, totalRecords)} de ${totalRecords}`
-                : "0 registros"
-              }
-            </span>
-            
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              {totalPages > 0 && (
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum: number;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
+            {/* Date Filter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "sm:w-auto w-full justify-start text-left font-normal h-11 gap-2",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <Filter className="h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {formatDate(dateRange.from.toISOString()).split(' ')[0]} — {formatDate(dateRange.to.toISOString()).split(' ')[0]}
+                      </>
+                    ) : (
+                      formatDate(dateRange.from.toISOString()).split(' ')[0]
+                    )
+                  ) : (
+                    <span>Filtrar período</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(range: any) => {
+                    if (range) {
+                      setDateRange(range);
                     }
-                    
-                    return (
+                  }}
+                  initialFocus
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-11 w-11 shrink-0"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="hidden sm:inline">Exibir</span>
+              <Select
+                value={String(recordsPerPage)}
+                onValueChange={(value) => setRecordsPerPage(Number(value))}
+              >
+                <SelectTrigger className="w-20 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="hidden sm:inline">por página</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground font-medium">
+                {totalRecords > 0 
+                  ? `${(currentPage - 1) * recordsPerPage + 1}-${Math.min(currentPage * recordsPerPage, totalRecords)} de ${totalRecords}`
+                  : "0 registros"
+                }
+              </span>
+              
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="h-9 w-9"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {totalPages > 0 && (
+                  <div className="hidden sm:flex items-center gap-1">
+                    {paginationNumbers.map((pageNum) => (
                       <Button
                         key={pageNum}
                         variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
+                        size="icon"
                         onClick={() => goToPage(pageNum)}
-                        className="h-8 w-8 p-0"
+                        className="h-9 w-9"
                       >
                         {pageNum}
                       </Button>
-                    );
-                  })}
-                </div>
-              )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                    ))}
+                  </div>
+                )}
+                
+                <span className="sm:hidden text-sm font-medium px-2">
+                  {currentPage}/{totalPages || 1}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="h-9 w-9"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -458,103 +677,48 @@ export const InspectionHistory = ({
 
       {/* Records */}
       {showInitialLoading ? (
-        <div className="bg-card border border-border rounded-lg p-12 text-center">
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       ) : filteredRecords.length === 0 ? (
-        <div className="bg-card border border-border rounded-lg p-12 text-center">
-          <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {searchTerm ? `Nenhum resultado para "${searchTerm}"` : 'Nenhum registro encontrado'}
-          </p>
+        <div className="bg-card border border-border rounded-xl p-16 text-center">
+          <div className="max-w-sm mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-2xl flex items-center justify-center">
+              <FileText className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              {searchTerm ? "Nenhum resultado" : "Nenhum registro"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm 
+                ? `Não encontramos registros para "${searchTerm}"` 
+                : 'Não há registros para o período selecionado'
+              }
+            </p>
+            {searchTerm && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearSearch}
+                className="mt-4"
+              >
+                Limpar pesquisa
+              </Button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredRecords.map((record) => (
-            <div 
-              key={record.id} 
-              className="bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-colors"
-            >
-              {/* Header */}
-              <div className="p-4 border-b border-border">
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {record.valve_code || "Sem código"}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{formatDate(record.inspection_date)}</span>
-                    </div>
-                  </div>
-                  <div className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-full text-xs flex-shrink-0 ml-2",
-                    record.status === 'concluido' 
-                      ? "bg-green-500/10 text-green-600 dark:text-green-400" 
-                      : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                  )}>
-                    {record.status === 'concluido' ? (
-                      <CheckCircle2 className="h-3 w-3" />
-                    ) : (
-                      <Clock className="h-3 w-3" />
-                    )}
-                    <span className="hidden sm:inline">{record.status === 'concluido' ? 'Concluído' : 'Pendente'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Photos Preview */}
-              <div className="grid grid-cols-3 gap-1 p-2 bg-muted/30">
-                {[record.photo_initial_url, record.photo_during_url, record.photo_final_url].map((url, i) => (
-                  <div key={i} className="aspect-square bg-muted rounded overflow-hidden">
-                    {url ? (
-                      <img 
-                        src={url} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-[10px] text-muted-foreground">—</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1 p-2 border-t border-border">
-                {onEditRecord && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onEditRecord(record)}
-                    className="flex-1 h-8 text-xs"
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Editar
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDownload(record)}
-                  className="flex-1 h-8 text-xs"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Baixar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDelete(record.id)}
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
+            <RecordCard
+              key={record.id}
+              record={record}
+              onEdit={onEditRecord}
+              onDownload={handleDownload}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       )}
