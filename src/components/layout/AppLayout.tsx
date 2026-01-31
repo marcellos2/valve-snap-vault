@@ -33,14 +33,17 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
         onTabChange(value as any);
         setSidebarOpen(false);
       }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group will-change-transform ${
         activeTab === value
-          ? "bg-primary text-primary-foreground shadow-lg"
+          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
       <Icon className={`w-5 h-5 transition-transform duration-200 ${activeTab === value ? 'scale-110' : 'group-hover:scale-105'}`} />
       <span className="font-medium">{label}</span>
+      {activeTab === value && (
+        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse-soft" />
+      )}
     </button>
   );
 
@@ -139,9 +142,9 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
 
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6 min-h-[calc(100vh-57px)] bg-background transition-colors duration-200">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto animate-fade-in">
             <div className="mb-6">
-              <h2 className="text-2xl lg:text-3xl font-bold text-primary">
+              <h2 className="text-2xl lg:text-3xl font-bold text-primary animate-slide-down">
                 {title}
               </h2>
             </div>

@@ -358,12 +358,12 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   return (
     <div className="space-y-6 animate-fade-in">
       {editingRecord && onCancelEdit && (
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end animate-slide-up">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={onCancelEdit} 
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
           >
             Cancelar edição
           </Button>
@@ -399,11 +399,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         />
       </div>
 
-      <Card className="p-6 border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg hover:shadow-xl transition-all duration-300">
+      <Card className="p-6 border-2 border-border bg-card shadow-lg hover:shadow-xl transition-all duration-300">
         <div>
-          <Label htmlFor="valveCode" className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <Label htmlFor="valveCode" className="text-sm font-semibold text-foreground flex items-center gap-2">
             Código da Válvula 
-            <span className="flex items-center gap-1 text-red-600 dark:text-red-500">
+            <span className="flex items-center gap-1 text-destructive">
               <AlertCircle className="h-3.5 w-3.5" />
               obrigatório
             </span>
@@ -415,10 +415,10 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
               value={valveCode}
               onChange={(e) => setValveCode(e.target.value)}
               placeholder="Ex: VLV-001"
-              className="h-11 bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:border-red-500 dark:focus:border-red-600 transition-all duration-300"
+              className="h-11 bg-background border-2 border-border text-foreground focus:border-primary transition-all duration-200"
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
             Campo obrigatório para salvar o relatório
           </p>
@@ -426,7 +426,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       </Card>
 
       {!isOnline && !editingRecord && (
-        <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-400">
+        <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-xl text-warning">
           <WifiOff className="h-4 w-4 flex-shrink-0" />
           <p className="text-sm">
             Você está offline. A inspeção será salva localmente e sincronizada quando a conexão for restaurada.
@@ -463,26 +463,26 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         </p>
       )}
 
-      <div className="space-y-3 pt-6 border-t-2 border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+      <div className="space-y-3 pt-6 border-t-2 border-border">
+        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
           <Copy className="h-4 w-4" />
           Textos Padronizados
         </h3>
         {standardTexts.map((item) => (
-          <Card key={item.id} className="p-4 border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-red-500 dark:hover:border-red-600 hover:shadow-lg transition-all duration-300">
+          <Card key={item.id} className="p-4 border-2 border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-200">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-xs text-gray-500 dark:text-gray-400 mb-2">{item.title}</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{item.text}</p>
+                <h4 className="font-semibold text-xs text-muted-foreground mb-2">{item.title}</h4>
+                <p className="text-sm text-foreground/80 leading-relaxed">{item.text}</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => copyToClipboard(item.text, item.id)}
-                className="shrink-0 h-9 w-9 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300"
+                className="shrink-0 h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
               >
                 {copiedText === item.id ? (
-                  <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  <Check className="h-4 w-4 text-success" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}

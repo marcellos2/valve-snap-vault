@@ -166,4 +166,83 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--primary));
   }
+
+  /* Fade animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out forwards;
+  }
+
+  /* Gradient primary button */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+  }
+
+  .gradient-primary:hover {
+    background: linear-gradient(135deg, hsl(var(--primary-dark)) 0%, hsl(var(--primary)) 100%);
+  }
+
+  /* Focus visible ring */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Hardware acceleration for animations */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

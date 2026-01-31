@@ -78,7 +78,7 @@ export const PhotoUploader = ({
 
   return (
     <>
-      <Card className="overflow-hidden border border-border">
+      <Card className="overflow-hidden border border-border hover:border-primary/40 hover:shadow-lg transition-all duration-300 group">
         {/* Header do card */}
         <div className="bg-primary px-4 py-3">
           <h3 className="font-semibold text-sm text-primary-foreground">{title}</h3>
@@ -87,18 +87,19 @@ export const PhotoUploader = ({
 
         <div className="p-4 bg-card">
           {photo ? (
-            <div className="relative group">
+            <div className="relative group/photo">
               <img
                 src={photo}
                 alt={title}
-                className="w-full h-52 object-cover rounded-md"
+                className="w-full h-52 object-cover rounded-lg transition-transform duration-300 group-hover/photo:scale-[1.02]"
               />
-              <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover/photo:opacity-100 transition-opacity duration-300 rounded-lg" />
+              <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover/photo:opacity-100 transition-all duration-300 translate-y-1 group-hover/photo:translate-y-0">
                 <Button
                   size="icon"
                   variant="secondary"
                   onClick={onRotate}
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-lg"
                 >
                   <RotateCw className="h-4 w-4" />
                 </Button>
@@ -106,7 +107,7 @@ export const PhotoUploader = ({
                   size="icon"
                   variant="destructive"
                   onClick={onRemove}
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-lg"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -114,10 +115,10 @@ export const PhotoUploader = ({
             </div>
           ) : (
             <div 
-              className={`h-52 bg-muted rounded-md flex items-center justify-center border-2 border-dashed transition-all cursor-pointer ${
+              className={`h-52 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all duration-300 cursor-pointer ${
                 isDragging 
-                  ? 'border-primary bg-primary/5' 
-                  : 'border-border hover:border-primary/50'
+                  ? 'border-primary bg-primary/5 scale-[1.02]' 
+                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
               }`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -126,11 +127,15 @@ export const PhotoUploader = ({
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="text-center p-4">
-                <Upload className={`h-10 w-10 mx-auto mb-2 transition-colors ${
+                <div className={`mx-auto mb-3 w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  isDragging ? 'bg-primary/10' : 'bg-muted'
+                }`}>
+                  <Upload className={`h-7 w-7 transition-all duration-300 ${
+                    isDragging ? 'text-primary scale-110' : 'text-muted-foreground'
+                  }`} />
+                </div>
+                <p className={`text-sm font-medium transition-colors ${
                   isDragging ? 'text-primary' : 'text-muted-foreground'
-                }`} />
-                <p className={`text-sm transition-colors ${
-                  isDragging ? 'text-primary font-medium' : 'text-muted-foreground'
                 }`}>
                   {isDragging ? 'Solte a imagem aqui' : 'Arraste ou clique'}
                 </p>
@@ -145,7 +150,7 @@ export const PhotoUploader = ({
             <Button
               onClick={() => setShowCamera(true)}
               size="sm"
-              className="flex-1"
+              className="flex-1 shadow-sm hover:shadow-md transition-shadow"
             >
               <Camera className="h-4 w-4 mr-1.5" />
               Câmera
@@ -154,7 +159,7 @@ export const PhotoUploader = ({
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1"
+              className="flex-1 hover:bg-muted transition-colors"
             >
               <Upload className="h-4 w-4 mr-1.5" />
               Arquivo
