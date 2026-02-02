@@ -233,6 +233,7 @@ export const InspectionHistory = ({
   const [recordsPerPage, setRecordsPerPage] = useState(20);
   const [totalRecords, setTotalRecords] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "em_andamento" | "concluido">("all");
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -256,7 +257,7 @@ export const InspectionHistory = ({
     };
   }, [searchTerm]);
 
-  const loadRecords = useCallback(async (page: number, search: string, dates: { from: Date; to?: Date }, pageSize: number) => {
+  const loadRecords = useCallback(async (page: number, search: string, dates: { from: Date; to?: Date }, pageSize: number, status: "all" | "em_andamento" | "concluido") => {
     setIsLoading(true);
     try {
       let countQuery = supabase
@@ -266,6 +267,12 @@ export const InspectionHistory = ({
       let query = supabase
         .from("inspection_records")
         .select("*");
+      
+      // Apply status filter
+      if (status !== "all") {
+        countQuery = countQuery.eq("status", status);
+        query = query.eq("status", status);
+      }
       
       if (search.trim() !== "") {
         countQuery = countQuery.ilike("valve_code", `%${search}%`);
@@ -323,17 +330,17 @@ export const InspectionHistory = ({
 
   // Main effect: Load records when dependencies change
   useEffect(() => {
-    loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
-  }, [currentPage, debouncedSearchTerm, dateRange, recordsPerPage, refreshTrigger, loadRecords]);
+    loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter);
+  }, [currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter, refreshTrigger, loadRecords]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, dateRange, recordsPerPage]);
+  }, [debouncedSearchTerm, dateRange, recordsPerPage, statusFilter]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
+    loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter);
   };
 
   const clearSearch = () => {
@@ -353,7 +360,7 @@ export const InspectionHistory = ({
       if (error) throw error;
 
       toast({ title: "Registro excluído" });
-      loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage);
+      loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter);
     } catch (error) {
       toast({
         title: "Erro",
@@ -541,12 +548,47 @@ export const InspectionHistory = ({
                   <X className="h-4 w-4" />
                 </button>
               )}
-              {isLoading && searchTerm && (
+              {isLoading && (searchTerm || statusFilter !== "all") && (
                 <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
                   <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </div>
+
+            {/* Status Filter */}
+            <Select
+              value={statusFilter}
+              onValueChange={(value: "all" | "em_andamento" | "concluido") => setStatusFilter(value)}
+            >
+              <SelectTrigger className="w-full sm:w-44 h-11">
+                <div className="flex items-center gap-2">
+                  {statusFilter === "all" && <Filter className="h-4 w-4 text-muted-foreground" />}
+                  {statusFilter === "em_andamento" && <Clock className="h-4 w-4 text-warning" />}
+                  {statusFilter === "concluido" && <CheckCircle2 className="h-4 w-4 text-success" />}
+                  <SelectValue placeholder="Todos os status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span>Todos</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="em_andamento">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-warning" />
+                    <span>Pendentes</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="concluido">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span>Concluídos</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* Date Filter */}
             <Popover>
@@ -558,7 +600,7 @@ export const InspectionHistory = ({
                     !dateRange && "text-muted-foreground"
                   )}
                 >
-                  <Filter className="h-4 w-4" />
+                  <Calendar className="h-4 w-4" />
                   {dateRange?.from ? (
                     dateRange.to ? (
                       <>
@@ -568,7 +610,7 @@ export const InspectionHistory = ({
                       formatDate(dateRange.from.toISOString()).split(' ')[0]
                     )
                   ) : (
-                    <span>Filtrar período</span>
+                    <span>Período</span>
                   )}
                 </Button>
               </PopoverTrigger>
