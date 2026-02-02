@@ -108,35 +108,35 @@ export const PWAUpdateNotifier = () => {
   if (!showUpdate) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-fade-in">
-      <div className="bg-card border border-border rounded-xl p-4 shadow-lg">
+    <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[100] animate-slide-down">
+      <div className="bg-card/95 backdrop-blur-xl border border-primary/20 rounded-2xl p-4 shadow-2xl shadow-primary/10">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <RefreshCw className={`w-5 h-5 text-primary ${isUpdating ? 'animate-spin' : ''}`} />
+          <div className="p-2.5 bg-gradient-to-br from-primary to-primary-dark rounded-xl">
+            <RefreshCw className={`w-5 h-5 text-white ${isUpdating ? 'animate-spin' : ''}`} />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground text-sm">
+            <h3 className="font-bold text-foreground text-sm">
               Nova versão disponível
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Uma atualização está pronta. Clique para atualizar automaticamente.
+              Clique para atualizar o app agora.
             </p>
             <div className="flex gap-2 mt-3">
               <Button
                 size="sm"
                 onClick={handleUpdate}
                 disabled={isUpdating}
-                className="h-8 text-xs"
+                className="h-8 text-xs rounded-xl bg-gradient-to-r from-primary to-primary-dark hover:opacity-90"
               >
-                <RefreshCw className={`w-3 h-3 mr-1 ${isUpdating ? 'animate-spin' : ''}`} />
-                {isUpdating ? 'Atualizando...' : 'Atualizar agora'}
+                <RefreshCw className={`w-3 h-3 mr-1.5 ${isUpdating ? 'animate-spin' : ''}`} />
+                {isUpdating ? 'Atualizando...' : 'Atualizar'}
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowUpdate(false)}
                 disabled={isUpdating}
-                className="h-8 text-xs"
+                className="h-8 text-xs rounded-xl"
               >
                 Depois
               </Button>
@@ -145,7 +145,7 @@ export const PWAUpdateNotifier = () => {
           <button
             onClick={() => setShowUpdate(false)}
             disabled={isUpdating}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+            className="text-muted-foreground hover:text-foreground disabled:opacity-50 p-1 rounded-lg hover:bg-muted transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
