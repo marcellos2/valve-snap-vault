@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from "react";
-import { ClipboardCheck, History, FileText, Settings, Moon, Sun, Download, Plus, Zap } from "lucide-react";
+import { ClipboardCheck, History, FileText, Settings, Moon, Sun, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
       <header className="relative z-20">
         {/* Curved background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-red-700">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-[hsl(345,80%,15%)]">
             {/* Noise texture */}
             <div className="absolute inset-0 opacity-30 mix-blend-soft-light noise-overlay" />
             
@@ -112,16 +112,9 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
 
           {/* Title section */}
           <div className="text-center animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-white/80 text-xs font-medium mb-3 border border-white/10">
-              <Zap className="w-3 h-3" />
-              Sistema ativo
-            </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              {title}
+              Inspeções de Válvulas
             </h2>
-            <p className="text-sm text-white/60 mt-1.5 font-medium">
-              Gerencie suas inspeções com eficiência
-            </p>
           </div>
         </div>
       </header>
@@ -139,13 +132,13 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                   "group relative flex flex-col items-center justify-center p-5 rounded-2xl transition-all duration-300",
                   "hover:scale-[1.02] active:scale-[0.98] will-change-transform",
                   activeTab === item.value
-                    ? "bg-gradient-to-br from-primary to-red-700 text-white shadow-xl shadow-primary/25"
+                    ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl shadow-primary/25"
                     : "premium-card glow-hover"
                 )}
               >
                 {/* Glow effect for active */}
                 {activeTab === item.value && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-red-700 rounded-2xl blur-xl opacity-40 -z-10" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark rounded-2xl blur-xl opacity-40 -z-10" />
                 )}
 
                 <div className={cn(
@@ -227,14 +220,14 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
           onClick={() => onTabChange("inspection")}
           className={cn(
             "fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full",
-            "bg-gradient-to-br from-primary to-red-700 text-white",
+            "bg-gradient-to-br from-primary to-primary-dark text-white",
             "shadow-lg shadow-primary/40 hover:shadow-xl hover:shadow-primary/50",
             "flex items-center justify-center",
             "hover:scale-110 active:scale-95 transition-all duration-300",
             "animate-scale-in"
           )}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary to-red-700 rounded-full blur-lg opacity-50 animate-pulse-soft" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark rounded-full blur-lg opacity-50 animate-pulse-soft" />
           <Plus className="w-6 h-6 relative z-10" />
         </button>
       )}
