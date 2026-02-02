@@ -277,7 +277,8 @@ export const InspectionHistory = ({
       if (search.trim() !== "") {
         countQuery = countQuery.ilike("valve_code", `%${search}%`);
         query = query.ilike("valve_code", `%${search}%`);
-      } else if (dates?.from) {
+      } else if (status === "all" && dates?.from) {
+        // Only apply date filter when status is "all"
         const start = new Date(dates.from);
         start.setHours(0, 0, 0, 0);
         
@@ -561,31 +562,21 @@ export const InspectionHistory = ({
               onValueChange={(value: "all" | "em_andamento" | "concluido") => setStatusFilter(value)}
             >
               <SelectTrigger className="w-full sm:w-44 h-11">
-                <div className="flex items-center gap-2">
-                  {statusFilter === "all" && <Filter className="h-4 w-4 text-muted-foreground" />}
-                  {statusFilter === "em_andamento" && <Clock className="h-4 w-4 text-warning" />}
-                  {statusFilter === "concluido" && <CheckCircle2 className="h-4 w-4 text-success" />}
-                  <SelectValue placeholder="Todos os status" />
-                </div>
+                <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span>Todos</span>
-                  </div>
-                </SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="em_andamento">
-                  <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-warning" />
-                    <span>Pendentes</span>
-                  </div>
+                    Pendentes
+                  </span>
                 </SelectItem>
                 <SelectItem value="concluido">
-                  <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
-                    <span>Concluídos</span>
-                  </div>
+                    Concluídos
+                  </span>
                 </SelectItem>
               </SelectContent>
             </Select>
