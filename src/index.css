@@ -16,11 +16,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    /* Vermelho primário */
-    --primary: 0 72% 45%;
+    /* Cor de Vinho - Wine Red */
+    --primary: 345 70% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 72% 35%;
-    --primary-glow: 0 72% 55%;
+    --primary-dark: 345 75% 20%;
+    --primary-glow: 345 65% 40%;
 
     --secondary: 220 15% 92%;
     --secondary-foreground: 0 0% 20%;
@@ -72,11 +72,11 @@
     --popover: 240 10% 7%;
     --popover-foreground: 0 0% 95%;
 
-    /* Vermelho vibrante no escuro */
-    --primary: 0 72% 50%;
+    /* Cor de Vinho - Wine Red no escuro */
+    --primary: 345 70% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 72% 40%;
-    --primary-glow: 0 72% 60%;
+    --primary-dark: 345 75% 25%;
+    --primary-glow: 345 65% 45%;
 
     --secondary: 240 10% 12%;
     --secondary-foreground: 0 0% 90%;
