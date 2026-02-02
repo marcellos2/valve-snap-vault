@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutV2 } from "@/components/layout/AppLayoutV2";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
 import { FileText, Settings as SettingsIcon, Sparkles } from "lucide-react";
@@ -99,13 +99,13 @@ const Index = () => {
   };
 
   return (
-    <AppLayout 
+    <AppLayoutV2 
       activeTab={activeTab} 
       onTabChange={setActiveTab}
       title={getTitle()}
     >
       {renderContent()}
-    </AppLayout>
+    </AppLayoutV2>
   );
 };
 
