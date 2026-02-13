@@ -330,15 +330,9 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     try {
       await navigator.clipboard.writeText(text);
       setCopiedText(id);
-      toast({
-        title: "Texto copiado!",
-      });
       setTimeout(() => setCopiedText(null), 2000);
     } catch (err) {
-      toast({
-        title: "Erro ao copiar texto",
-        variant: "destructive",
-      });
+      console.error("Erro ao copiar texto:", err);
     }
   };
 

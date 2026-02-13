@@ -75,14 +75,18 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
           {/* Top bar */}
           <div className="flex items-center justify-between mb-6 animate-slide-down">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-white/20 rounded-xl blur-md" />
+              <button 
+                onClick={() => onTabChange("inspection")}
+                className="relative group cursor-pointer"
+                title="Voltar ao início"
+              >
+                <div className="absolute inset-0 bg-white/20 rounded-xl blur-md group-hover:bg-white/30 transition-all" />
                 <img 
                   src="/logo-192.png" 
                   alt="Tecnoiso" 
-                  className="relative w-11 h-11 object-contain" 
+                  className="relative w-11 h-11 object-contain group-hover:scale-110 transition-transform duration-300" 
                 />
-              </div>
+              </button>
               <div>
                 <h1 className="text-lg font-bold text-white tracking-tight">Tecnoiso</h1>
                 <p className="text-xs text-white/60 font-medium">Sistema de Inspeção</p>
