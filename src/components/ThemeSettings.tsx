@@ -153,7 +153,7 @@ const themePresets: ThemePreset[] = [
   {
     id: "rose",
     name: "Rosa Clássico",
-    description: "Rosa João?",
+    description: "Rosa ",
     primary: "330 65% 45%",
     dark: "330 70% 35%",
     glow: "330 55% 55%",
