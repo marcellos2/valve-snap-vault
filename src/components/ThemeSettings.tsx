@@ -27,7 +27,7 @@ const themePresets: ThemePreset[] = [
   {
     id: "wine-classic",
     name: "Vinho Clássico",
-    description: "Elegante e profissional",
+    description: "Elegante",
     primary: "345 70% 30%",
     dark: "345 80% 20%",
     glow: "345 60% 45%",
@@ -55,7 +55,7 @@ const themePresets: ThemePreset[] = [
   {
     id: "ocean",
     name: "Oceano",
-    description: "Azul sereno e moderno",
+    description: "Azul sereno",
     primary: "210 70% 35%",
     dark: "210 80% 25%",
     glow: "210 60% 50%",
@@ -83,7 +83,7 @@ const themePresets: ThemePreset[] = [
   {
     id: "emerald",
     name: "Esmeralda",
-    description: "Verde sofisticado",
+    description: "Verde ",
     primary: "160 60% 30%",
     dark: "160 70% 20%",
     glow: "160 50% 45%",
@@ -139,7 +139,7 @@ const themePresets: ThemePreset[] = [
   {
     id: "teal",
     name: "Turquesa Fresh",
-    description: "Fresco e energético",
+    description: "turquesa",
     primary: "180 55% 30%",
     dark: "180 65% 22%",
     glow: "180 50% 45%",
@@ -152,8 +152,8 @@ const themePresets: ThemePreset[] = [
   },
   {
     id: "rose",
-    name: "Rosa Moderno",
-    description: "Ousado e contemporâneo",
+    name: "Rosa Clássico",
+    description: "Rosa João?",
     primary: "330 65% 45%",
     dark: "330 70% 35%",
     glow: "330 55% 55%",
