@@ -8,6 +8,7 @@ import { Save, Loader2, Copy, Check, AlertCircle, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
+import { uploadPhotoWithRetry } from "@/lib/upload-photo";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
