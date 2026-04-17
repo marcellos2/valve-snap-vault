@@ -1,13 +1,13 @@
 import { ReactNode, useState, useEffect } from "react";
-import { ClipboardCheck, History, FileText, Settings, Moon, Sun, Download, Plus } from "lucide-react";
+import { ClipboardCheck, History, FileText, Moon, Sun, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface AppLayoutV2Props {
   children: ReactNode;
-  activeTab: "inspection" | "history" | "reports" | "settings";
-  onTabChange: (tab: "inspection" | "history" | "reports" | "settings") => void;
+  activeTab: "inspection" | "history" | "reports";
+  onTabChange: (tab: "inspection" | "history" | "reports") => void;
   title: string;
 }
 
@@ -31,7 +31,6 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
     { icon: ClipboardCheck, label: "Nova Inspeção", value: "inspection" as const, description: "Iniciar inspeção", gradient: "from-primary to-primary-dark" },
     { icon: History, label: "Histórico", value: "history" as const, description: "Ver registros", gradient: "from-orange-500 to-red-600" },
     { icon: FileText, label: "Relatórios", value: "reports" as const, description: "Gerar relatórios", gradient: "from-blue-500 to-indigo-600" },
-    { icon: Settings, label: "Configurações", value: "settings" as const, description: "Ajustes do sistema", gradient: "from-gray-500 to-gray-700" },
   ];
 
   return (
