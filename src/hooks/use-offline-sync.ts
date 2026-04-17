@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { uploadPhotoWithRetry } from "@/lib/upload-photo";
 
 interface PendingInspection {
   id: string;
@@ -35,39 +36,8 @@ export const useOfflineSync = () => {
   }, []);
 
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
-    try {
-      if (!photoData) return null;
-
-      const base64Data = photoData.split(",")[1];
-      if (!base64Data) return null;
-
-      const byteCharacters = atob(base64Data);
-      const byteArray = new Uint8Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteArray[i] = byteCharacters.charCodeAt(i);
-      }
-      const blob = new Blob([byteArray], { type: "image/jpeg" });
-
-      const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}.jpg`;
-      
-      const { error } = await supabase.storage
-        .from("valve-photos")
-        .upload(filePath, blob, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      const { data } = supabase.storage
-        .from("valve-photos")
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Erro no upload:", error);
-      return null;
-    }
+    if (!photoData) return null;
+    return uploadPhotoWithRetry(photoData, fileName);
   };
 
   const syncPendingData = useCallback(async () => {

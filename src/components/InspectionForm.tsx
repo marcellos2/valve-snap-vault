@@ -8,6 +8,7 @@ import { Save, Loader2, Copy, Check, AlertCircle, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
+import { uploadPhotoWithRetry } from "@/lib/upload-photo";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
@@ -131,53 +132,25 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   };
 
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
-    try {
-      if (!photoData) {
-        console.error("photoData is null or undefined");
-        return null;
-      }
+    const url = await uploadPhotoWithRetry(photoData, fileName, {
+      onProgress: ({ attempt, maxAttempts, phase }) => {
+        if (phase === "retrying") {
+          toast({
+            title: "Reenviando foto...",
+            description: `Tentativa ${attempt} de ${maxAttempts} (${fileName})`,
+          });
+        }
+      },
+    });
 
-      const base64Data = photoData.split(",")[1];
-      if (!base64Data) {
-        console.error("Invalid base64 data");
-        return null;
-      }
-
-      const byteCharacters = atob(base64Data);
-      const byteArray = new Uint8Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteArray[i] = byteCharacters.charCodeAt(i);
-      }
-      const blob = new Blob([byteArray], { type: "image/jpeg" });
-
-      const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}.jpg`;
-      
-      const { error, data: uploadData } = await supabase.storage
-        .from("valve-photos")
-        .upload(filePath, blob, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error(`Error uploading ${fileName}:`, error);
-        throw error;
-      }
-
-      const { data } = supabase.storage
-        .from("valve-photos")
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Erro ao fazer upload:", error);
+    if (!url) {
       toast({
         title: "Erro no upload",
-        description: `Falha ao enviar foto ${fileName}`,
+        description: `Falha ao enviar foto ${fileName} após múltiplas tentativas. Verifique sua conexão.`,
         variant: "destructive",
       });
-      return null;
     }
+    return url;
   };
 
   const handleSave = async () => {
