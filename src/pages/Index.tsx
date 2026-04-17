@@ -3,10 +3,10 @@ import { AppLayoutV2 } from "@/components/layout/AppLayoutV2";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
 import { InspectionReports } from "@/components/InspectionReports";
-import { ThemeSettings, applyTheme } from "@/components/ThemeSettings";
+import { applyTheme } from "@/components/ThemeSettings";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<"inspection" | "history" | "reports" | "settings">("inspection");
+  const [activeTab, setActiveTab] = useState<"inspection" | "history" | "reports">("inspection");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
@@ -33,7 +33,6 @@ const Index = () => {
       case "inspection": return editingRecord ? "Editar Inspeção" : "Nova Inspeção";
       case "history": return "Histórico de Inspeções";
       case "reports": return "Relatórios";
-      case "settings": return "Configurações";
     }
   };
 
@@ -56,8 +55,6 @@ const Index = () => {
         );
       case "reports":
         return <InspectionReports />;
-      case "settings":
-        return <ThemeSettings />;
     }
   };
 
