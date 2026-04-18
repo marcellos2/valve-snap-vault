@@ -289,6 +289,26 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       onSaved();
     } catch (error) {
       console.error("Erro ao salvar:", error);
+
+      if (!editingRecord) {
+        const savedLocally = savePendingInspection({
+          valveCode,
+          photoInitial: photoInitialUrl ?? photoInitial,
+          photoDuring: photoDuringUrl ?? photoDuring,
+          photoFinal: photoFinalUrl ?? photoFinal,
+        });
+
+        if (savedLocally) {
+          setValveCode("");
+          setPhotoInitial(null);
+          setPhotoDuring(null);
+          setPhotoFinal(null);
+          setRotations({ initial: 0, during: 0, final: 0 });
+          onSaved();
+          return;
+        }
+      }
+
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Falha ao salvar inspeção",
