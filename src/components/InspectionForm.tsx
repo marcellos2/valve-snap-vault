@@ -200,10 +200,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       return;
     }
 
+    let photoInitialUrl = editingRecord?.photo_initial_url || null;
+    let photoDuringUrl = editingRecord?.photo_during_url || null;
+    let photoFinalUrl = editingRecord?.photo_final_url || null;
+
     try {
-      let photoInitialUrl = editingRecord?.photo_initial_url || null;
-      let photoDuringUrl = editingRecord?.photo_during_url || null;
-      let photoFinalUrl = editingRecord?.photo_final_url || null;
 
       if (photoInitial && photoInitial.startsWith('data:')) {
         const uploadedUrl = await uploadPhoto(photoInitial, "initial");
