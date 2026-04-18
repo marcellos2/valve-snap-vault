@@ -200,10 +200,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       return;
     }
 
+    let photoInitialUrl = editingRecord?.photo_initial_url || null;
+    let photoDuringUrl = editingRecord?.photo_during_url || null;
+    let photoFinalUrl = editingRecord?.photo_final_url || null;
+
     try {
-      let photoInitialUrl = editingRecord?.photo_initial_url || null;
-      let photoDuringUrl = editingRecord?.photo_during_url || null;
-      let photoFinalUrl = editingRecord?.photo_final_url || null;
 
       if (photoInitial && photoInitial.startsWith('data:')) {
         const uploadedUrl = await uploadPhoto(photoInitial, "initial");
@@ -289,6 +290,26 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       onSaved();
     } catch (error) {
       console.error("Erro ao salvar:", error);
+
+      if (!editingRecord) {
+        const savedLocally = savePendingInspection({
+          valveCode,
+          photoInitial: photoInitialUrl ?? photoInitial,
+          photoDuring: photoDuringUrl ?? photoDuring,
+          photoFinal: photoFinalUrl ?? photoFinal,
+        });
+
+        if (savedLocally) {
+          setValveCode("");
+          setPhotoInitial(null);
+          setPhotoDuring(null);
+          setPhotoFinal(null);
+          setRotations({ initial: 0, during: 0, final: 0 });
+          onSaved();
+          return;
+        }
+      }
+
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Falha ao salvar inspeção",

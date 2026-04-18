@@ -87,14 +87,20 @@ export const useOfflineSync = () => {
           let photoDuringUrl: string | null = null;
           let photoFinalUrl: string | null = null;
 
-          if (inspection.photoInitial?.startsWith('data:')) {
-            photoInitialUrl = await uploadPhoto(inspection.photoInitial, 'initial');
+          if (inspection.photoInitial) {
+            photoInitialUrl = inspection.photoInitial.startsWith('data:')
+              ? await uploadPhoto(inspection.photoInitial, 'initial')
+              : inspection.photoInitial;
           }
-          if (inspection.photoDuring?.startsWith('data:')) {
-            photoDuringUrl = await uploadPhoto(inspection.photoDuring, 'during');
+          if (inspection.photoDuring) {
+            photoDuringUrl = inspection.photoDuring.startsWith('data:')
+              ? await uploadPhoto(inspection.photoDuring, 'during')
+              : inspection.photoDuring;
           }
-          if (inspection.photoFinal?.startsWith('data:')) {
-            photoFinalUrl = await uploadPhoto(inspection.photoFinal, 'final');
+          if (inspection.photoFinal) {
+            photoFinalUrl = inspection.photoFinal.startsWith('data:')
+              ? await uploadPhoto(inspection.photoFinal, 'final')
+              : inspection.photoFinal;
           }
 
           const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
