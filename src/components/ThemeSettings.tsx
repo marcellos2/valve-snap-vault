@@ -416,7 +416,40 @@ export const ThemeSettings = () => {
     reader.onload = (e) => {
       try {
         const imported = JSON.parse(e.target?.result as string);
-        setConfig(imported);
+        if (
+          typeof imported !== "object" ||
+          imported === null ||
+          Array.isArray(imported) ||
+          typeof imported.themeId !== "string"
+        ) {
+          alert("Arquivo de tema inválido");
+          return;
+        }
+        const sanitized: ThemeConfig = {
+          themeId: String(imported.themeId),
+          ...(imported.customColors && typeof imported.customColors === "object" && !Array.isArray(imported.customColors)
+            ? { customColors: {
+                primary: typeof imported.customColors.primary === "string" ? imported.customColors.primary : undefined,
+                dark: typeof imported.customColors.dark === "string" ? imported.customColors.dark : undefined,
+                glow: typeof imported.customColors.glow === "string" ? imported.customColors.glow : undefined,
+              }}
+            : {}),
+          ...(imported.customSettings && typeof imported.customSettings === "object" && !Array.isArray(imported.customSettings)
+            ? { customSettings: {
+                fontSize: typeof imported.customSettings.fontSize === "number" ? imported.customSettings.fontSize : undefined,
+                borderRadius: typeof imported.customSettings.borderRadius === "number" ? imported.customSettings.borderRadius : undefined,
+                animations: typeof imported.customSettings.animations === "boolean" ? imported.customSettings.animations : undefined,
+                glassEffect: typeof imported.customSettings.glassEffect === "boolean" ? imported.customSettings.glassEffect : undefined,
+                compactMode: typeof imported.customSettings.compactMode === "boolean" ? imported.customSettings.compactMode : undefined,
+                darkMode: typeof imported.customSettings.darkMode === "boolean" ? imported.customSettings.darkMode : undefined,
+                accentColor: typeof imported.customSettings.accentColor === "string" ? imported.customSettings.accentColor : undefined,
+                fontFamily: typeof imported.customSettings.fontFamily === "string" ? imported.customSettings.fontFamily : undefined,
+                spacing: typeof imported.customSettings.spacing === "number" ? imported.customSettings.spacing : undefined,
+                shadowIntensity: typeof imported.customSettings.shadowIntensity === "number" ? imported.customSettings.shadowIntensity : undefined,
+              }}
+            : {}),
+        };
+        setConfig(sanitized);
       } catch (error) {
         alert("Erro ao importar tema");
       }
