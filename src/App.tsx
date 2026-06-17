@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Install from "./pages/Install";
 import Diagnostico from "./pages/Diagnostico";
+import GooglePhotosSync from "./pages/GooglePhotosSync";
 import NotFound from "./pages/NotFound";
 import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/install" element={<Install />} />
           <Route path="/diagnostico" element={<Diagnostico />} />
+          <Route path="/google-photos-sync" element={<GooglePhotosSync />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
