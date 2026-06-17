@@ -30,7 +30,8 @@ export const useOfflineSync = () => {
       // Only count pending items, not synced or syncing
       const pendingItems = inspections.filter(i => i.status === 'pending' || i.status === 'failed');
       setPendingCount(pendingItems.length);
-    } catch {
+    } catch (err) {
+      console.warn("Failed to read pending inspections from localStorage:", err);
       setPendingCount(0);
     }
   }, []);
@@ -151,6 +152,11 @@ export const useOfflineSync = () => {
       }
     } catch (error) {
       console.error("Erro na sincronização:", error);
+      toast({
+        title: "Erro na sincronização",
+        description: "Não foi possível sincronizar os dados. Tentaremos novamente em breve.",
+        variant: "destructive",
+      });
     } finally {
       syncingRef.current = false;
       setIsSyncing(false);

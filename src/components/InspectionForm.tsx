@@ -327,6 +327,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       setTimeout(() => setCopiedText(null), 2000);
     } catch (err) {
       console.error("Erro ao copiar texto:", err);
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o texto. Tente selecionar manualmente.",
+        variant: "destructive",
+      });
     }
   };
 

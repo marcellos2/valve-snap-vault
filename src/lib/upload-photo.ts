@@ -130,7 +130,7 @@ export const uploadPhotoWithRetry = async (
   const profile = getNetworkProfile(maxAttempts);
 
   if (!photoData || !photoData.startsWith("data:")) {
-    console.error("Invalid photo data");
+    console.error("Invalid photo data: expected a data URI string");
     return null;
   }
 
@@ -195,7 +195,8 @@ export const uploadPhotoWithRetry = async (
         if (smallerBlob.size < blob.size) {
           blob = smallerBlob;
         }
-      } catch {
+      } catch (compressionErr) {
+        console.warn(`Re-compression between retries failed for ${fileName}:`, compressionErr);
       }
 
       console.warn(`Upload attempt ${attempt}/${profile.attempts} failed for ${fileName}:`, err);

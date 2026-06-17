@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { CheckCircle2, Clock, TrendingUp, Calendar, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface MonthlyData {
   month: string;
@@ -19,6 +20,7 @@ const MONTHS = [
 ];
 
 export const InspectionReports = () => {
+  const { toast } = useToast();
   const [records, setRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -41,6 +43,11 @@ export const InspectionReports = () => {
         setRecords(data || []);
       } catch (error) {
         console.error("Erro ao carregar relatórios:", error);
+        toast({
+          title: "Erro",
+          description: "Falha ao carregar dados do relatório. Tente novamente.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
