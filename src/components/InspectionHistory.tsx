@@ -9,6 +9,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LazyImage } from "@/components/LazyImage";
+import { loadImageWithFallback } from "@/lib/image-utils";
+import { formatDate, formatDateForFilename } from "@/lib/date-utils";
 
 interface InspectionRecord {
   id: string;
@@ -21,70 +24,9 @@ interface InspectionRecord {
   status: 'em_andamento' | 'concluido';
 }
 
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
-};
 
-const formatDateForFilename = (dateString: string): string => {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
-};
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
-
-// Optimized image component with intersection observer
-const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!imgRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "100px" }
-    );
-
-    observer.observe(imgRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={imgRef} className={cn("relative overflow-hidden", className)}>
-      {!isLoaded && (
-        <div className="absolute inset-0 bg-muted animate-pulse" />
-      )}
-      {isInView && (
-        <img
-          src={src}
-          alt={alt}
-          className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setIsLoaded(true)}
-          loading="lazy"
-          decoding="async"
-        />
-      )}
-    </div>
-  );
-};
 
 // Record card component for better performance
 const RecordCard = ({ 
@@ -371,20 +313,7 @@ export const InspectionHistory = ({
     }
   };
 
-  const loadImage = (url: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = (error) => {
-        const img2 = new Image();
-        img2.onload = () => resolve(img2);
-        img2.onerror = () => reject(error);
-        img2.src = url;
-      };
-      img.src = url;
-    });
-  };
+
 
   const handleDownload = async (record: InspectionRecord) => {
     try {
@@ -445,7 +374,7 @@ export const InspectionHistory = ({
 
         if (photo.url) {
           try {
-            const img = await loadImage(photo.url);
+            const img = await loadImageWithFallback(photo.url);
             const imgY = startY + cardHeaderHeight + 15;
             const imgHeight = photoHeight - cardHeaderHeight - 30;
             const imgWidth = photoWidth - 30;

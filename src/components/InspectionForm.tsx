@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { PhotoUploader } from "./PhotoUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,8 @@ import { Save, Loader2, Copy, Check, AlertCircle, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
-import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import { rotateImage } from "@/lib/image-utils";
+import { uploadPhotoIfNeeded, determineInspectionStatus } from "@/lib/inspection-utils";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
@@ -46,67 +47,15 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     }
   }, [editingRecord]);
 
-  const rotatePhoto = (photo: string, currentRotation: number): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      
-      if (photo.startsWith('http')) {
-        img.crossOrigin = "anonymous";
-      }
-      
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return resolve(photo);
+  const resetForm = useCallback(() => {
+    setValveCode("");
+    setPhotoInitial(null);
+    setPhotoDuring(null);
+    setPhotoFinal(null);
+    setRotations({ initial: 0, during: 0, final: 0 });
+  }, []);
 
-        const newRotation = (currentRotation + 90) % 360;
 
-        if (newRotation === 90 || newRotation === 270) {
-          canvas.width = img.height;
-          canvas.height = img.width;
-        } else {
-          canvas.width = img.width;
-          canvas.height = img.height;
-        }
-
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((newRotation * Math.PI) / 180);
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
-
-        resolve(canvas.toDataURL("image/jpeg", 0.95));
-      };
-      
-      img.onerror = (error) => {
-        console.error("Erro ao carregar imagem para rotação:", error);
-        const img2 = new Image();
-        img2.onload = () => {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return resolve(photo);
-
-          const newRotation = (currentRotation + 90) % 360;
-
-          if (newRotation === 90 || newRotation === 270) {
-            canvas.width = img2.height;
-            canvas.height = img2.width;
-          } else {
-            canvas.width = img2.width;
-            canvas.height = img2.height;
-          }
-
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.rotate((newRotation * Math.PI) / 180);
-          ctx.drawImage(img2, -img2.width / 2, -img2.height / 2);
-
-          resolve(canvas.toDataURL("image/jpeg", 0.95));
-        };
-        img2.onerror = () => reject(error);
-        img2.src = photo;
-      };
-      
-      img.src = photo;
-    });
-  };
 
   const handleRotate = async (type: "initial" | "during" | "final") => {
     const photoMap = { initial: photoInitial, during: photoDuring, final: photoFinal };
@@ -114,7 +63,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     if (!photo) return;
 
     try {
-      const rotated = await rotatePhoto(photo, rotations[type]);
+      const rotated = await rotateImage(photo, rotations[type]);
       setRotations((prev) => ({ ...prev, [type]: (prev[type] + 90) % 360 }));
 
       if (type === "initial") setPhotoInitial(rotated);
@@ -131,27 +80,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     }
   };
 
-  const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
-    const url = await uploadPhotoWithRetry(photoData, fileName, {
-      onProgress: ({ attempt, maxAttempts, phase }) => {
-        if (phase === "retrying") {
-          toast({
-            title: "Reenviando foto...",
-            description: `Tentativa ${attempt} de ${maxAttempts} (${fileName})`,
-          });
-        }
-      },
-    });
 
-    if (!url) {
-      toast({
-        title: "Erro no upload",
-        description: `Falha ao enviar foto ${fileName} após múltiplas tentativas. Verifique sua conexão.`,
-        variant: "destructive",
-      });
-    }
-    return url;
-  };
 
   const handleSave = async () => {
     if (!valveCode || valveCode.trim() === "") {
@@ -188,11 +117,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       });
 
       if (saved) {
-        setValveCode("");
-        setPhotoInitial(null);
-        setPhotoDuring(null);
-        setPhotoFinal(null);
-        setRotations({ initial: 0, during: 0, final: 0 });
+        resetForm();
         onSaved();
       }
       
@@ -205,33 +130,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     let photoFinalUrl = editingRecord?.photo_final_url || null;
 
     try {
+      photoInitialUrl = await uploadPhotoIfNeeded(photoInitial, "initial") ?? photoInitialUrl;
+      photoDuringUrl = await uploadPhotoIfNeeded(photoDuring, "during") ?? photoDuringUrl;
+      photoFinalUrl = await uploadPhotoIfNeeded(photoFinal, "final") ?? photoFinalUrl;
 
-      if (photoInitial && photoInitial.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoInitial, "initial");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto inicial");
-        photoInitialUrl = uploadedUrl;
-      } else if (photoInitial) {
-        photoInitialUrl = photoInitial;
-      }
-      
-      if (photoDuring && photoDuring.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoDuring, "during");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto durante");
-        photoDuringUrl = uploadedUrl;
-      } else if (photoDuring) {
-        photoDuringUrl = photoDuring;
-      }
-      
-      if (photoFinal && photoFinal.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoFinal, "final");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto final");
-        photoFinalUrl = uploadedUrl;
-      } else if (photoFinal) {
-        photoFinalUrl = photoFinal;
-      }
-
-      const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
-      const status = hasAllPhotos ? 'concluido' : 'em_andamento';
+      const status = determineInspectionStatus(photoInitialUrl, photoDuringUrl, photoFinalUrl);
 
       let error;
       
@@ -277,11 +180,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
           : "Inspeção salva. Você pode adicionar as fotos restantes depois",
       });
 
-      setValveCode("");
-      setPhotoInitial(null);
-      setPhotoDuring(null);
-      setPhotoFinal(null);
-      setRotations({ initial: 0, during: 0, final: 0 });
+      resetForm();
       
       if (onCancelEdit) {
         onCancelEdit();
@@ -300,11 +199,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         });
 
         if (savedLocally) {
-          setValveCode("");
-          setPhotoInitial(null);
-          setPhotoDuring(null);
-          setPhotoFinal(null);
-          setRotations({ initial: 0, during: 0, final: 0 });
+          resetForm();
           onSaved();
           return;
         }
