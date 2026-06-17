@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Image as ImageIcon } from "lucide-react";
 import { AppLayoutV2 } from "@/components/layout/AppLayoutV2";
 import { InspectionForm } from "@/components/InspectionForm";
 import { InspectionHistory } from "@/components/InspectionHistory";
@@ -65,6 +67,13 @@ const Index = () => {
       title={getTitle()}
     >
       {renderContent()}
+      <Link
+        to="/google-photos-sync"
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg px-4 py-3 text-sm font-medium hover:opacity-90"
+        aria-label="Abrir Google Photos Sync"
+      >
+        <ImageIcon className="h-4 w-4" /> Google Photos
+      </Link>
     </AppLayoutV2>
   );
 };
