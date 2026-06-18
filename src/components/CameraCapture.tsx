@@ -44,7 +44,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 overflow-y-auto">
       <Card className="w-full max-w-2xl bg-card p-0 overflow-hidden">
         <div className="relative">
           {!capturedImage ? (
