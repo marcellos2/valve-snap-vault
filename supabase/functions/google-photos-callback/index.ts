@@ -13,19 +13,41 @@ Deno.serve(async (req) => {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const error = url.searchParams.get('error');
-  const origin = state ? decodeURIComponent(state) : '*';
+  let origin = '*';
+  let mode: 'popup' | 'redirect' = 'popup';
+  let returnTo = '/google-photos-sync';
+
+  if (state) {
+    try {
+      const normalized = state.padEnd(state.length + (4 - state.length % 4) % 4, '=');
+      const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string };
+      if (parsed.origin) origin = new URL(parsed.origin).origin;
+      if (parsed.mode === 'redirect') mode = 'redirect';
+      if (parsed.returnTo?.startsWith('/')) returnTo = parsed.returnTo;
+    } catch {
+      origin = '*';
+    }
+  }
 
   const html = (payload: Record<string, unknown>) => `<!doctype html><html><head><meta charset="utf-8"><title>Google Photos</title></head><body style="font-family:system-ui;padding:24px;background:#0a0a0a;color:#fafafa">
 <p>Conectando ao Google Photos...</p>
 <script>
   (function(){
     var payload = ${JSON.stringify(payload)};
+    var target = ${JSON.stringify(`${origin}${returnTo}`)};
+    var hash = '#google_photos_auth=' + encodeURIComponent(JSON.stringify(payload));
+    if (${JSON.stringify(mode)} === 'redirect') {
+      window.location.replace(target + hash);
+      return;
+    }
     try {
       if (window.opener) {
         window.opener.postMessage({ type: 'google-photos-auth', payload: payload }, ${JSON.stringify(origin)});
+        setTimeout(function(){ window.close(); }, 400);
+        return;
       }
     } catch (e) { console.error(e); }
-    setTimeout(function(){ window.close(); }, 400);
+    window.location.replace(target + hash);
   })();
 </script>
 </body></html>`;
