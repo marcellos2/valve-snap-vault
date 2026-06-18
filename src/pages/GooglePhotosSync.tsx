@@ -8,6 +8,7 @@ import { Loader2, LogIn, LogOut, Download, Image as ImageIcon, FolderOpen } from
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 const STORAGE_KEY = "google_photos_session_v1";
+const GOOGLE_PHOTOS_AUTH_ORIGIN = new URL(SUPABASE_URL).origin;
 
 type Session = {
   access_token: string;
@@ -103,7 +104,7 @@ export default function GooglePhotosSync() {
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.origin !== window.location.origin) return;
+      if (e.origin !== GOOGLE_PHOTOS_AUTH_ORIGIN) return;
       const data = e.data;
       if (!data || data.type !== "google-photos-auth") return;
       saveAuthPayload(data.payload as Record<string, unknown>);
