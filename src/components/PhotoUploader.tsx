@@ -87,19 +87,18 @@ export const PhotoUploader = ({
 
         <div className="p-4 bg-card">
           {photo ? (
-            <div className="relative group/photo">
+            <div className="relative">
               <img
                 src={photo}
                 alt={title}
-                className="w-full h-52 object-cover rounded-lg transition-transform duration-300 group-hover/photo:scale-[1.02]"
+                className="w-full h-52 object-cover rounded-lg"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover/photo:opacity-100 transition-opacity duration-300 rounded-lg" />
-              <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover/photo:opacity-100 transition-all duration-300 translate-y-1 group-hover/photo:translate-y-0">
+              <div className="absolute top-2 right-2 flex gap-1.5">
                 <Button
                   size="icon"
                   variant="secondary"
                   onClick={onRotate}
-                  className="h-8 w-8 shadow-lg"
+                  className="h-9 w-9 shadow-lg bg-background/90 hover:bg-background"
                 >
                   <RotateCw className="h-4 w-4" />
                 </Button>
@@ -107,7 +106,7 @@ export const PhotoUploader = ({
                   size="icon"
                   variant="destructive"
                   onClick={onRemove}
-                  className="h-8 w-8 shadow-lg"
+                  className="h-9 w-9 shadow-lg"
                 >
                   <X className="h-4 w-4" />
                 </Button>

@@ -20,7 +20,9 @@ Deno.serve((req) => {
     });
   }
 
-  const redirectUri = `${url.origin}/functions/v1/google-photos-callback`;
+  // Force https — Supabase forwards internally as http, but Google requires https
+  const host = url.host;
+  const redirectUri = `https://${host}/functions/v1/google-photos-callback`;
   const state = encodeURIComponent(origin);
 
   const params = new URLSearchParams({
