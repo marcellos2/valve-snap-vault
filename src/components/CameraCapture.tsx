@@ -1,4 +1,5 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Webcam from "react-webcam";
 import { Camera, X, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,18 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
     setCapturedImage(null); // Reset captured image when switching cameras
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 overflow-y-auto">
+  // Lock body scroll while camera is open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-black flex items-center justify-center p-4 overflow-y-auto"
+      style={{ zIndex: 2147483647 }}
+    >
       <Card className="w-full max-w-2xl bg-card p-0 overflow-hidden">
         <div className="relative">
           {!capturedImage ? (
@@ -106,6 +117,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
           )}
         </div>
       </Card>
-    </div>
+    </div>,
+    document.body,
   );
 };
