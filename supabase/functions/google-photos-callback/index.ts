@@ -13,20 +13,32 @@ Deno.serve(async (req) => {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const error = url.searchParams.get('error');
-  let origin = '*';
+
+  if (!state) {
+    return new Response('missing state parameter', { status: 400 });
+  }
+
+  let origin: string;
   let mode: 'popup' | 'redirect' = 'popup';
   let returnTo = '/google-photos-sync';
 
-  if (state) {
-    try {
-      const normalized = state.padEnd(state.length + (4 - state.length % 4) % 4, '=');
-      const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string };
-      if (parsed.origin) origin = new URL(parsed.origin).origin;
-      if (parsed.mode === 'redirect') mode = 'redirect';
-      if (parsed.returnTo?.startsWith('/')) returnTo = parsed.returnTo;
-    } catch {
-      origin = '*';
+  try {
+    const normalized = state.padEnd(state.length + (4 - state.length % 4) % 4, '=');
+    const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string };
+    if (!parsed.origin) {
+      return new Response('missing origin in state', { status: 400 });
     }
+    origin = new URL(parsed.origin).origin;
+    if (parsed.mode === 'redirect') mode = 'redirect';
+    if (parsed.returnTo?.startsWith('/')) returnTo = parsed.returnTo;
+  } catch {
+    return new Response('invalid state parameter', { status: 400 });
+  }
+
+  // Only allow HTTPS origins (or localhost for dev)
+  const isAllowedOrigin = /^https:\/\//.test(origin) || /^http:\/\/localhost(:\d+)?$/.test(origin);
+  if (!isAllowedOrigin) {
+    return new Response('invalid origin', { status: 400 });
   }
 
   const html = (payload: Record<string, unknown>) => `<!doctype html><html><head><meta charset="utf-8"><title>Google Photos</title></head><body style="font-family:system-ui;padding:24px;background:#0a0a0a;color:#fafafa">

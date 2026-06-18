@@ -220,7 +220,9 @@ const Diagnostico = () => {
         const regs = await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map((r) => r.unregister()));
       }
-      localStorage.clear();
+      // Only remove app-specific keys; preserve pending inspections and user data
+      const keysToRemove = ["app_version_seen", "themeConfig"];
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
     } catch (e) {
       console.error(e);
     }

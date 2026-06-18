@@ -153,8 +153,11 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     return url;
   };
 
+  const MAX_VALVE_CODE_LENGTH = 100;
+
   const handleSave = async () => {
-    if (!valveCode || valveCode.trim() === "") {
+    const trimmedCode = valveCode.trim();
+    if (!trimmedCode) {
       toast({
         title: "Atenção",
         description: "O código da válvula é obrigatório",
@@ -164,6 +167,15 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       setTimeout(() => {
         valveCodeRef.current?.focus();
       }, 300);
+      return;
+    }
+
+    if (trimmedCode.length > MAX_VALVE_CODE_LENGTH) {
+      toast({
+        title: "Atenção",
+        description: `O código da válvula deve ter no máximo ${MAX_VALVE_CODE_LENGTH} caracteres`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -403,6 +415,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
               value={valveCode}
               onChange={(e) => setValveCode(e.target.value)}
               placeholder="Ex: VLV-001"
+              maxLength={MAX_VALVE_CODE_LENGTH}
               className="h-11 bg-background border-2 border-border text-foreground focus:border-primary transition-all duration-200"
             />
           </div>
