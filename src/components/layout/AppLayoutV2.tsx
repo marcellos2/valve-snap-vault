@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { ClipboardCheck, History, FileText, Moon, Sun, Download, Plus, Activity } from "lucide-react";
+import { ClipboardCheck, History, FileText, Moon, Sun, Download, Plus, Activity, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -90,6 +90,16 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                 title="Diagnóstico"
               >
                 <Activity className="w-5 h-5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/google-photos-sync")}
+                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                title="Google Photos"
+              >
+                <Images className="w-5 h-5" />
               </Button>
 
               <Button

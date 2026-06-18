@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     return new Response(html({ error: 'missing_code' }), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
-  const redirectUri = `${url.origin}/functions/v1/google-photos-callback`;
+  const redirectUri = `https://${url.host}/functions/v1/google-photos-callback`;
 
   try {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
