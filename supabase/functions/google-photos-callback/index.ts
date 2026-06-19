@@ -13,17 +13,20 @@ Deno.serve(async (req) => {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const error = url.searchParams.get('error');
+  const wantsJson = url.searchParams.get('format') === 'json';
   let origin = '*';
   let mode: 'popup' | 'redirect' = 'popup';
   let returnTo = '/google-photos-sync';
+  let stateRedirectUri: string | null = null;
 
   if (state) {
     try {
       const normalized = state.padEnd(state.length + (4 - state.length % 4) % 4, '=');
-      const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string };
+      const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string; redirectUri?: string };
       if (parsed.origin) origin = new URL(parsed.origin).origin;
       if (parsed.mode === 'redirect') mode = 'redirect';
       if (parsed.returnTo?.startsWith('/')) returnTo = parsed.returnTo;
+      if (parsed.redirectUri) stateRedirectUri = new URL(parsed.redirectUri).toString();
     } catch {
       origin = '*';
     }
@@ -53,14 +56,20 @@ Deno.serve(async (req) => {
 </body></html>`;
 
   if (error) {
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     return new Response(html({ error }), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
   if (!code) {
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: 'missing_code' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     return new Response(html({ error: 'missing_code' }), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
-  const redirectUri = `https://${url.host}/functions/v1/google-photos-callback`;
+  const redirectUri = stateRedirectUri || `https://${url.host}/functions/v1/google-photos-callback`;
 
   try {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -76,21 +85,37 @@ Deno.serve(async (req) => {
     });
     const tokens = await tokenRes.json();
     if (!tokenRes.ok) {
+      if (wantsJson) {
+        return new Response(JSON.stringify({ error: tokens.error || 'token_exchange_failed', detail: tokens }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(html({ error: tokens.error || 'token_exchange_failed', detail: tokens }), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     }
+    const payload = {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token ?? null,
+      expires_in: tokens.expires_in,
+      scope: tokens.scope,
+      token_type: tokens.token_type,
+    };
+    if (wantsJson) {
+      return new Response(JSON.stringify(payload), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     return new Response(
-      html({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token ?? null,
-        expires_in: tokens.expires_in,
-        scope: tokens.scope,
-        token_type: tokens.token_type,
-      }),
+      html(payload),
       { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
     );
   } catch (e) {
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: 'network_error', detail: String(e) }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(html({ error: 'network_error', detail: String(e) }), {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });

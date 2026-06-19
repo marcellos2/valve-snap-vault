@@ -10,6 +10,7 @@ import GooglePhotosSync from "./pages/GooglePhotosSync";
 import NotFound from "./pages/NotFound";
 import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { GooglePhotosOAuthHandler } from "@/components/GooglePhotosOAuthHandler";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <Sonner />
       <PWAUpdateNotifier />
       <OfflineIndicator />
+      <GooglePhotosOAuthHandler />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

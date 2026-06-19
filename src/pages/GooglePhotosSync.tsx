@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, LogIn, LogOut, Download, Image as ImageIcon, FolderOpen } from "lucide-react";
+import { ArrowLeft, Loader2, LogIn, LogOut, Download, Image as ImageIcon, FolderOpen } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -35,11 +36,13 @@ type Album = {
 type AuthMode = "popup" | "redirect";
 
 function buildLoginUrl(mode: AuthMode) {
+  const redirectUri = `${window.location.origin}/`;
   const params = new URLSearchParams({
     origin: window.location.origin,
     mode,
     redirect: "1",
     returnTo: `${window.location.pathname}${window.location.search}`,
+    redirectUri,
   });
   return `${SUPABASE_URL}/functions/v1/google-photos-login?${params.toString()}`;
 }
@@ -67,6 +70,7 @@ async function callFn(path: string, init: RequestInit = {}, accessToken?: string
 }
 
 export default function GooglePhotosSync() {
+  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [tab, setTab] = useState<"photos" | "albums">("photos");
   const [photos, setPhotos] = useState<MediaItem[]>([]);
@@ -104,13 +108,53 @@ export default function GooglePhotosSync() {
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.origin !== GOOGLE_PHOTOS_AUTH_ORIGIN) return;
+      if (e.origin !== GOOGLE_PHOTOS_AUTH_ORIGIN && e.origin !== window.location.origin) return;
       const data = e.data;
       if (!data || data.type !== "google-photos-auth") return;
       saveAuthPayload(data.payload as Record<string, unknown>);
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
+  }, [saveAuthPayload]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+    if (!code && !error) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const qs = new URLSearchParams({ format: "json" });
+        if (code) qs.set("code", code);
+        if (state) qs.set("state", state);
+        if (error) qs.set("error", error);
+        const payload = await callFn(`google-photos-callback?${qs.toString()}`);
+        if (cancelled) return;
+
+        if (window.opener) {
+          window.opener.postMessage({ type: "google-photos-auth", payload }, window.location.origin);
+          window.close();
+          return;
+        }
+
+        saveAuthPayload(payload as Record<string, unknown>);
+      } catch (e: any) {
+        const message = e?.message || "Não foi possível concluir o login do Google Photos.";
+        if (window.opener) {
+          window.opener.postMessage({ type: "google-photos-auth", payload: { error: message } }, window.location.origin);
+          window.close();
+          return;
+        }
+        toast.error(message);
+      } finally {
+        if (!cancelled) window.history.replaceState(null, "", window.location.pathname);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [saveAuthPayload]);
 
   useEffect(() => {
@@ -225,11 +269,16 @@ export default function GooglePhotosSync() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/40 backdrop-blur sticky top-0 z-10 bg-background/80">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-semibold flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" /> Google Photos Sync
-            </h1>
-            <p className="text-xs text-muted-foreground">Módulo isolado · OAuth 2.0 · readonly</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <Button size="icon" variant="ghost" onClick={() => navigate("/")} aria-label="Voltar para o início">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold flex items-center gap-2 truncate">
+                <ImageIcon className="h-5 w-5 shrink-0" /> Google Photos Sync
+              </h1>
+              <p className="text-xs text-muted-foreground">Módulo isolado · OAuth 2.0 · readonly</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {headerStatus}
@@ -253,6 +302,9 @@ export default function GooglePhotosSync() {
             <h2 className="text-xl font-semibold">Conecte sua conta Google</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Autorize o acesso de leitura à sua biblioteca para visualizar fotos e álbuns. Os tokens ficam apenas nesta aba (sessionStorage).
+            </p>
+            <p className="text-xs text-muted-foreground max-w-2xl mx-auto break-all">
+              Se aparecer erro 400, adicione esta URL nos redirecionamentos autorizados do OAuth: {window.location.origin}/
             </p>
             <Button onClick={handleConnect}><LogIn className="h-4 w-4 mr-2" /> Conectar Google Photos</Button>
           </Card>
