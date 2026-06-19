@@ -36,7 +36,7 @@ type Album = {
 type AuthMode = "popup" | "redirect";
 
 function buildLoginUrl(mode: AuthMode) {
-  const redirectUri = `${window.location.origin}/google-photos-sync`;
+  const redirectUri = `${window.location.origin}/`;
   const params = new URLSearchParams({
     origin: window.location.origin,
     mode,
@@ -108,13 +108,53 @@ export default function GooglePhotosSync() {
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.origin !== GOOGLE_PHOTOS_AUTH_ORIGIN) return;
+      if (e.origin !== GOOGLE_PHOTOS_AUTH_ORIGIN && e.origin !== window.location.origin) return;
       const data = e.data;
       if (!data || data.type !== "google-photos-auth") return;
       saveAuthPayload(data.payload as Record<string, unknown>);
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
+  }, [saveAuthPayload]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+    if (!code && !error) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const qs = new URLSearchParams({ format: "json" });
+        if (code) qs.set("code", code);
+        if (state) qs.set("state", state);
+        if (error) qs.set("error", error);
+        const payload = await callFn(`google-photos-callback?${qs.toString()}`);
+        if (cancelled) return;
+
+        if (window.opener) {
+          window.opener.postMessage({ type: "google-photos-auth", payload }, window.location.origin);
+          window.close();
+          return;
+        }
+
+        saveAuthPayload(payload as Record<string, unknown>);
+      } catch (e: any) {
+        const message = e?.message || "Não foi possível concluir o login do Google Photos.";
+        if (window.opener) {
+          window.opener.postMessage({ type: "google-photos-auth", payload: { error: message } }, window.location.origin);
+          window.close();
+          return;
+        }
+        toast.error(message);
+      } finally {
+        if (!cancelled) window.history.replaceState(null, "", window.location.pathname);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [saveAuthPayload]);
 
   useEffect(() => {
@@ -264,7 +304,7 @@ export default function GooglePhotosSync() {
               Autorize o acesso de leitura à sua biblioteca para visualizar fotos e álbuns. Os tokens ficam apenas nesta aba (sessionStorage).
             </p>
             <p className="text-xs text-muted-foreground max-w-2xl mx-auto break-all">
-              Se aparecer erro 400, adicione esta URL nos redirecionamentos autorizados do OAuth: {window.location.origin}/google-photos-sync
+              Se aparecer erro 400, adicione esta URL nos redirecionamentos autorizados do OAuth: {window.location.origin}/
             </p>
             <Button onClick={handleConnect}><LogIn className="h-4 w-4 mr-2" /> Conectar Google Photos</Button>
           </Card>
