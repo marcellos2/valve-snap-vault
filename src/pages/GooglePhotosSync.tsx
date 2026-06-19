@@ -262,6 +262,9 @@ export default function GooglePhotosSync() {
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Autorize o acesso de leitura à sua biblioteca para visualizar fotos e álbuns. Os tokens ficam apenas nesta aba (sessionStorage).
             </p>
+            <p className="text-xs text-muted-foreground max-w-2xl mx-auto break-all">
+              Se aparecer erro 400, adicione esta URL nos redirecionamentos autorizados do OAuth: {GOOGLE_PHOTOS_REDIRECT_URI}
+            </p>
             <Button onClick={handleConnect}><LogIn className="h-4 w-4 mr-2" /> Conectar Google Photos</Button>
           </Card>
         )}
