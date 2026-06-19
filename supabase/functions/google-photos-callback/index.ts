@@ -16,14 +16,16 @@ Deno.serve(async (req) => {
   let origin = '*';
   let mode: 'popup' | 'redirect' = 'popup';
   let returnTo = '/google-photos-sync';
+  let stateRedirectUri: string | null = null;
 
   if (state) {
     try {
       const normalized = state.padEnd(state.length + (4 - state.length % 4) % 4, '=');
-      const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string };
+      const parsed = JSON.parse(atob(normalized)) as { origin?: string; mode?: string; returnTo?: string; redirectUri?: string };
       if (parsed.origin) origin = new URL(parsed.origin).origin;
       if (parsed.mode === 'redirect') mode = 'redirect';
       if (parsed.returnTo?.startsWith('/')) returnTo = parsed.returnTo;
+      if (parsed.redirectUri) stateRedirectUri = new URL(parsed.redirectUri).toString();
     } catch {
       origin = '*';
     }
@@ -60,7 +62,7 @@ Deno.serve(async (req) => {
     return new Response(html({ error: 'missing_code' }), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
-  const redirectUri = `https://${url.host}/functions/v1/google-photos-callback`;
+  const redirectUri = stateRedirectUri || `https://${url.host}/functions/v1/google-photos-callback`;
 
   try {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
