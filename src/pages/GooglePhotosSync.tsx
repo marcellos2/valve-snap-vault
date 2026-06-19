@@ -10,7 +10,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 const STORAGE_KEY = "google_photos_session_v1";
 const GOOGLE_PHOTOS_AUTH_ORIGIN = new URL(SUPABASE_URL).origin;
-const GOOGLE_PHOTOS_REDIRECT_URI = `${GOOGLE_PHOTOS_AUTH_ORIGIN}/functions/v1/google-photos-callback`;
 
 type Session = {
   access_token: string;
@@ -37,11 +36,13 @@ type Album = {
 type AuthMode = "popup" | "redirect";
 
 function buildLoginUrl(mode: AuthMode) {
+  const redirectUri = `${window.location.origin}/google-photos-sync`;
   const params = new URLSearchParams({
     origin: window.location.origin,
     mode,
     redirect: "1",
     returnTo: `${window.location.pathname}${window.location.search}`,
+    redirectUri,
   });
   return `${SUPABASE_URL}/functions/v1/google-photos-login?${params.toString()}`;
 }
