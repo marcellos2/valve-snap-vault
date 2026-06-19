@@ -15,6 +15,7 @@ Deno.serve((req) => {
   const origin = url.searchParams.get('origin');
   const mode = url.searchParams.get('mode') === 'redirect' ? 'redirect' : 'popup';
   const returnTo = url.searchParams.get('returnTo') || '/google-photos-sync';
+  const requestedRedirectUri = url.searchParams.get('redirectUri');
   if (!origin) {
     return new Response(JSON.stringify({ error: 'origin query param required' }), {
       status: 400,
@@ -22,13 +23,14 @@ Deno.serve((req) => {
     });
   }
 
-  // Force https — Supabase forwards internally as http, but Google requires https
-  const host = url.host;
-  const redirectUri = `https://${host}/functions/v1/google-photos-callback`;
+  let redirectUri: string;
   let state: string;
   try {
     const parsedOrigin = new URL(origin);
-    state = btoa(JSON.stringify({ origin: parsedOrigin.origin, mode, returnTo })).replace(/=/g, '');
+    const parsedRedirectUri = requestedRedirectUri ? new URL(requestedRedirectUri) : new URL(`${parsedOrigin.origin}/`);
+    if (parsedRedirectUri.origin !== parsedOrigin.origin) throw new Error('redirect origin mismatch');
+    redirectUri = parsedRedirectUri.toString();
+    state = btoa(JSON.stringify({ module: 'google-photos', origin: parsedOrigin.origin, mode, returnTo, redirectUri })).replace(/=/g, '');
   } catch {
     return new Response(JSON.stringify({ error: 'invalid origin' }), {
       status: 400,
