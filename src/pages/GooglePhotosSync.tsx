@@ -264,11 +264,16 @@ export default function GooglePhotosSync() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/40 backdrop-blur sticky top-0 z-10 bg-background/80">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-semibold flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" /> Google Photos Sync
-            </h1>
-            <p className="text-xs text-muted-foreground">Módulo isolado · OAuth 2.0 · readonly</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <Button size="icon" variant="ghost" onClick={() => navigate("/")} aria-label="Voltar para o início">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold flex items-center gap-2 truncate">
+                <ImageIcon className="h-5 w-5 shrink-0" /> Google Photos Sync
+              </h1>
+              <p className="text-xs text-muted-foreground">Módulo isolado · OAuth 2.0 · readonly</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {headerStatus}
