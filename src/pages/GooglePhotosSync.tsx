@@ -82,118 +82,70 @@ export default function GooglePhotosSync() {
 
   const connected = !!session;
 
-  const persistGoogleSession = useCallback((sess: Session) => {
+  const saveAuthPayload = useCallback((payload: Record<string, unknown>) => {
+    if (payload.error) {
+      toast.error(`Falha no login: ${payload.error}`);
+      return;
+    }
+
+    const accessToken = String(payload.access_token || "");
+    if (!accessToken) {
+      toast.error("Login retornou sem token de acesso.");
+      return;
+    }
+
+    const sess: Session = {
+      access_token: accessToken,
+      refresh_token: (payload.refresh_token as string) ?? null,
+      expires_at: Date.now() + (Number(payload.expires_in ?? 3600) - 60) * 1000,
+      scope: payload.scope as string | undefined,
+    };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(sess));
     setSession(sess);
     toast.success("Google Photos conectado");
   }, []);
 
-  const readGoogleTokenFromAuth = useCallback(async (): Promise<Session> => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-
-    const authSession = data.session as typeof data.session & {
-      provider_token?: string | null;
-      provider_refresh_token?: string | null;
-    };
-    if (!authSession?.provider_token) {
-      throw new Error("O login Google voltou sem permissão do Google Photos. Tente conectar novamente.");
-    }
-
-    return {
-      access_token: authSession.provider_token,
-      refresh_token: authSession.provider_refresh_token ?? null,
-      expires_at: authSession.expires_at ? authSession.expires_at * 1000 : Date.now() + 55 * 60 * 1000,
-      scope: GOOGLE_PHOTOS_SCOPE,
-    };
-  }, []);
-
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.origin !== window.location.origin) return;
+      if (e.origin !== GOOGLE_PHOTOS_AUTH_ORIGIN) return;
       const data = e.data;
       if (!data || data.type !== "google-photos-auth") return;
-      if (data.payload?.error) {
-        toast.error(`Falha no login: ${data.payload.error}`);
-        return;
-      }
-      persistGoogleSession(data.payload as Session);
+      saveAuthPayload(data.payload as Record<string, unknown>);
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [persistGoogleSession]);
+  }, [saveAuthPayload]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const isPopupReturn = params.get("googlePhotosPopup") === "1";
-    const isRedirectReturn = params.get("googlePhotosRedirect") === "1";
-    if (!isPopupReturn && !isRedirectReturn) return;
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const rawPayload = params.get("google_photos_auth");
+    if (!rawPayload) return;
 
-    let cancelled = false;
-    void (async () => {
-      try {
-        const sess = await readGoogleTokenFromAuth();
-        if (cancelled) return;
-        if (isPopupReturn && window.opener) {
-          window.opener.postMessage({ type: "google-photos-auth", payload: sess }, window.location.origin);
-          window.close();
-          return;
-        }
-        persistGoogleSession(sess);
-      } catch (e: any) {
-        const message = e?.message || "Não foi possível concluir o login do Google Photos.";
-        if (isPopupReturn && window.opener) {
-          window.opener.postMessage({ type: "google-photos-auth", payload: { error: message } }, window.location.origin);
-          window.close();
-          return;
-        }
-        toast.error(message);
-      } finally {
-        if (!cancelled) window.history.replaceState(null, "", window.location.pathname);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [persistGoogleSession, readGoogleTokenFromAuth]);
+    try {
+      saveAuthPayload(JSON.parse(decodeURIComponent(rawPayload)) as Record<string, unknown>);
+    } catch {
+      toast.error("Não foi possível concluir o login do Google Photos.");
+    } finally {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }, [saveAuthPayload]);
 
   const handleConnect = useCallback(() => {
+    const popupUrl = buildLoginUrl("popup");
+    const redirectUrl = buildLoginUrl("redirect");
     const popup = window.open(
-      "about:blank",
+      popupUrl,
       "google-photos-oauth",
       "popup=yes,width=520,height=720,menubar=no,toolbar=no,location=yes,status=yes,scrollbars=yes,resizable=yes",
     );
 
-    const getAuthUrl = (redirectFlag: "googlePhotosPopup" | "googlePhotosRedirect") => supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/google-photos-sync?${redirectFlag}=1`,
-        scopes: GOOGLE_PHOTOS_SCOPE,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-          include_granted_scopes: "true",
-        },
-        skipBrowserRedirect: true,
-      },
-    });
-
     if (!popup || popup.closed) {
       toast.info("Abrindo login do Google Photos nesta aba...");
-      void getAuthUrl("googlePhotosRedirect").then(({ data, error }) => {
-        if (error || !data.url) throw error ?? new Error("URL de login não retornada.");
-        window.location.assign(data.url);
-      }).catch((e: any) => toast.error(`Falha ao abrir login: ${e?.message || e}`));
+      window.location.assign(redirectUrl);
       return;
     }
 
     popup.focus();
-    void getAuthUrl("googlePhotosPopup").then(({ data, error }) => {
-      if (error || !data.url) throw error ?? new Error("URL de login não retornada.");
-      popup.location.href = data.url;
-    }).catch((e: any) => {
-      popup.close();
-      toast.error(`Falha ao abrir login: ${e?.message || e}`);
-    });
   }, []);
 
   const handleDisconnect = useCallback(() => {
