@@ -5,12 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, LogIn, LogOut, Download, Image as ImageIcon, FolderOpen } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 const STORAGE_KEY = "google_photos_session_v1";
-const GOOGLE_PHOTOS_SCOPE = "openid email profile https://www.googleapis.com/auth/photoslibrary.readonly";
+const GOOGLE_PHOTOS_AUTH_ORIGIN = new URL(SUPABASE_URL).origin;
+const GOOGLE_PHOTOS_REDIRECT_URI = `${GOOGLE_PHOTOS_AUTH_ORIGIN}/functions/v1/google-photos-callback`;
 
 type Session = {
   access_token: string;
@@ -33,6 +33,18 @@ type Album = {
   coverPhotoBaseUrl?: string;
   mediaItemsCount?: string;
 };
+
+type AuthMode = "popup" | "redirect";
+
+function buildLoginUrl(mode: AuthMode) {
+  const params = new URLSearchParams({
+    origin: window.location.origin,
+    mode,
+    redirect: "1",
+    returnTo: `${window.location.pathname}${window.location.search}`,
+  });
+  return `${SUPABASE_URL}/functions/v1/google-photos-login?${params.toString()}`;
+}
 
 function loadSession(): Session | null {
   try {
