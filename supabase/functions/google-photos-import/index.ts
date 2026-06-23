@@ -53,9 +53,12 @@ Deno.serve(async (req) => {
         results.push({ id: item.id ?? '', ok: false, error: 'invalid_item' });
         continue;
       }
-      // Google Photos requires =w-h or =d suffix on baseUrl. Use 2048 long edge.
+      // Picker API: baseUrl needs =w-h suffix AND requires Authorization header with the
+      // same access token used to pick the items.
       const fetchUrl = `${item.baseUrl}=w2048-h2048`;
-      const imgRes = await fetch(fetchUrl);
+      const imgRes = await fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       if (!imgRes.ok) {
         results.push({ id: item.id, ok: false, error: `download_${imgRes.status}` });
         continue;
