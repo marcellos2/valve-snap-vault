@@ -1,5 +1,10 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
+// Proxies the Google Photos Picker API.
+// action=create  -> POST /v1/sessions               (returns pickerUri, id, pollingConfig, mediaItemsSet)
+// action=poll    -> GET  /v1/sessions/{sessionId}   (poll until mediaItemsSet=true)
+// action=items   -> GET  /v1/mediaItems?sessionId=  (list picked items)
+// action=delete  -> DELETE /v1/sessions/{sessionId}
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -12,37 +17,57 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const kind = url.searchParams.get('kind') ?? 'photos'; // 'photos' | 'albums'
-  const pageToken = url.searchParams.get('pageToken') ?? undefined;
-  const albumId = url.searchParams.get('albumId') ?? undefined;
-  const pageSize = url.searchParams.get('pageSize') ?? '50';
+  const action = url.searchParams.get('action') ?? 'create';
+  const sessionId = url.searchParams.get('sessionId') ?? '';
+  const pageSize = url.searchParams.get('pageSize') ?? '100';
+  const pageToken = url.searchParams.get('pageToken') ?? '';
+
+  const auth = { Authorization: `Bearer ${accessToken}` } as Record<string, string>;
 
   try {
     let res: Response;
-    if (kind === 'albums') {
-      const params = new URLSearchParams({ pageSize });
-      if (pageToken) params.set('pageToken', pageToken);
-      res = await fetch(`https://photoslibrary.googleapis.com/v1/albums?${params}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-    } else if (albumId) {
-      res = await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:search', {
+    if (action === 'create') {
+      res = await fetch('https://photospicker.googleapis.com/v1/sessions', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ albumId, pageSize: Number(pageSize), pageToken }),
+        headers: { ...auth, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+    } else if (action === 'poll') {
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: 'sessionId required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      res = await fetch(`https://photospicker.googleapis.com/v1/sessions/${encodeURIComponent(sessionId)}`, { headers: auth });
+    } else if (action === 'items') {
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: 'sessionId required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const qs = new URLSearchParams({ sessionId, pageSize });
+      if (pageToken) qs.set('pageToken', pageToken);
+      res = await fetch(`https://photospicker.googleapis.com/v1/mediaItems?${qs}`, { headers: auth });
+    } else if (action === 'delete') {
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: 'sessionId required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      res = await fetch(`https://photospicker.googleapis.com/v1/sessions/${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE', headers: auth,
+      });
+      return new Response(JSON.stringify({ ok: res.ok }), {
+        status: res.ok ? 200 : res.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      const params = new URLSearchParams({ pageSize });
-      if (pageToken) params.set('pageToken', pageToken);
-      res = await fetch(`https://photoslibrary.googleapis.com/v1/mediaItems?${params}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+      return new Response(JSON.stringify({ error: 'invalid_action' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       return new Response(JSON.stringify({ error: 'google_api_error', detail: data }), {
         status: res.status,
