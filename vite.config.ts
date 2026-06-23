@@ -45,6 +45,10 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         runtimeCaching: [
           {
+            urlPattern: /^https:\/\/iacyuixhhgejwnjjkezz\.supabase\.co\/functions\/v1\/.*/i,
+            handler: "NetworkOnly"
+          },
+          {
             urlPattern: /^https:\/\/iacyuixhhgejwnjjkezz\.supabase\.co\/.*/i,
             handler: "NetworkFirst",
             options: {
