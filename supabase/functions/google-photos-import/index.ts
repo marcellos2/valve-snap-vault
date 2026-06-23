@@ -1,6 +1,16 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+const googlePhotosCorsHeaders = {
+  ...corsHeaders,
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-google-access-token',
+};
+
+const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...googlePhotosCorsHeaders, 'Content-Type': 'application/json' },
+});
+
 interface ImportItem {
   id: string;
   baseUrl: string;
@@ -9,34 +19,24 @@ interface ImportItem {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: googlePhotosCorsHeaders });
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'method_not_allowed' }, 405);
   }
 
   const accessToken = req.headers.get('x-google-access-token');
   if (!accessToken) {
-    return new Response(JSON.stringify({ error: 'missing x-google-access-token header' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'missing x-google-access-token header' }, 401);
   }
 
   let body: { items?: ImportItem[] };
   try { body = await req.json(); } catch {
-    return new Response(JSON.stringify({ error: 'invalid_json' }), {
-      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'invalid_json' }, 400);
   }
 
   const items = Array.isArray(body.items) ? body.items.slice(0, 50) : [];
   if (items.length === 0) {
-    return new Response(JSON.stringify({ error: 'no_items' }), {
-      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'no_items' }, 400);
   }
 
   const supabase = createClient(
@@ -89,7 +89,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ results }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return jsonResponse({ results });
 });
