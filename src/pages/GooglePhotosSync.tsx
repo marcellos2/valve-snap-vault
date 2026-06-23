@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, LogIn, LogOut, Download, Image as ImageIcon, FolderOpen } from "lucide-react";
+import { ArrowLeft, Loader2, LogIn, LogOut, Download, Image as ImageIcon, MousePointerClick, ExternalLink } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -20,17 +20,13 @@ type Session = {
 
 type MediaItem = {
   id: string;
-  baseUrl: string;
-  filename?: string;
-  mimeType?: string;
-  mediaMetadata?: { creationTime?: string };
-};
-
-type Album = {
-  id: string;
-  title?: string;
-  coverPhotoBaseUrl?: string;
-  mediaItemsCount?: string;
+  createTime?: string;
+  type?: string;
+  mediaFile?: {
+    baseUrl: string;
+    mimeType?: string;
+    filename?: string;
+  };
 };
 
 type AuthMode = "popup" | "redirect";
@@ -72,14 +68,14 @@ async function callFn(path: string, init: RequestInit = {}, accessToken?: string
 export default function GooglePhotosSync() {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(() => loadSession());
-  const [tab, setTab] = useState<"photos" | "albums">("photos");
   const [photos, setPhotos] = useState<MediaItem[]>([]);
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [pickerUri, setPickerUri] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState<Record<string, string>>({});
-  const [currentAlbumId, setCurrentAlbumId] = useState<string | null>(null);
+  const pollRef = useRef<number | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
   const connected = !!session;
 
@@ -192,39 +188,63 @@ export default function GooglePhotosSync() {
   const handleDisconnect = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
     setSession(null);
-    setPhotos([]); setAlbums([]); setSelected(new Set()); setImported({});
-    setCurrentAlbumId(null);
+    setPhotos([]); setSelected(new Set()); setImported({});
+    setPickerUri(null);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    sessionIdRef.current = null;
   }, []);
 
-  const loadPhotos = useCallback(async (albumId?: string) => {
-    if (!session) return;
-    setLoading(true);
-    try {
-      const qs = new URLSearchParams({ kind: "photos", pageSize: "50" });
-      if (albumId) qs.set("albumId", albumId);
-      const data = await callFn(`google-photos-list?${qs}`, {}, session.access_token);
-      setPhotos((data.mediaItems ?? []) as MediaItem[]);
-      setCurrentAlbumId(albumId ?? null);
-      setTab("photos");
-    } catch (e: any) {
-      toast.error(`Erro ao buscar fotos: ${e.message}`);
-      if (String(e.message).includes("401")) handleDisconnect();
-    } finally { setLoading(false); }
-  }, [session, handleDisconnect]);
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }, []);
 
-  const loadAlbums = useCallback(async () => {
+  const fetchPickedItems = useCallback(async (sessionId: string) => {
     if (!session) return;
-    setLoading(true);
-    try {
-      const data = await callFn(`google-photos-list?kind=albums&pageSize=50`, {}, session.access_token);
-      setAlbums((data.albums ?? []) as Album[]);
-      setTab("albums");
-    } catch (e: any) {
-      toast.error(`Erro ao buscar álbuns: ${e.message}`);
-    } finally { setLoading(false); }
+    const qs = new URLSearchParams({ action: "items", sessionId, pageSize: "100" });
+    const data = await callFn(`google-photos-list?${qs}`, {}, session.access_token);
+    setPhotos((data.mediaItems ?? []) as MediaItem[]);
   }, [session]);
 
-  useEffect(() => { if (session && photos.length === 0 && albums.length === 0) loadPhotos(); }, [session, loadPhotos, photos.length, albums.length]);
+  const startPicker = useCallback(async () => {
+    if (!session) return;
+    stopPolling();
+    setPicking(true);
+    setPhotos([]); setSelected(new Set());
+    try {
+      const data = await callFn(`google-photos-list?action=create`, { method: "GET" }, session.access_token);
+      const sessionId = String(data.id ?? "");
+      const uri = String(data.pickerUri ?? "");
+      if (!sessionId || !uri) throw new Error("Resposta inválida do Picker");
+      sessionIdRef.current = sessionId;
+      setPickerUri(uri);
+      window.open(uri, "google-photos-picker", "popup=yes,width=520,height=720");
+      toast.info("Escolha as fotos na janela do Google que abriu.");
+
+      const intervalMs = Math.max(2000, Number(data?.pollingConfig?.pollInterval?.replace?.("s", "") ?? 2) * 1000);
+      pollRef.current = window.setInterval(async () => {
+        try {
+          const poll = await callFn(`google-photos-list?action=poll&sessionId=${encodeURIComponent(sessionId)}`, {}, session.access_token);
+          if (poll.mediaItemsSet) {
+            stopPolling();
+            setPicking(false);
+            await fetchPickedItems(sessionId);
+            toast.success("Fotos carregadas");
+          }
+        } catch (e: any) {
+          stopPolling();
+          setPicking(false);
+          toast.error(`Erro no polling: ${e.message}`);
+          if (String(e.message).includes("401")) handleDisconnect();
+        }
+      }, intervalMs);
+    } catch (e: any) {
+      setPicking(false);
+      toast.error(`Erro ao iniciar seleção: ${e.message}`);
+      if (String(e.message).includes("401")) handleDisconnect();
+    }
+  }, [session, stopPolling, fetchPickedItems, handleDisconnect]);
+
+  useEffect(() => () => stopPolling(), [stopPolling]);
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -236,8 +256,8 @@ export default function GooglePhotosSync() {
 
   const handleImport = useCallback(async () => {
     if (!session || selected.size === 0) return;
-    const items = photos.filter(p => selected.has(p.id))
-      .map(p => ({ id: p.id, baseUrl: p.baseUrl, filename: p.filename, mimeType: p.mimeType }));
+    const items = photos.filter(p => selected.has(p.id) && p.mediaFile?.baseUrl)
+      .map(p => ({ id: p.id, baseUrl: p.mediaFile!.baseUrl, filename: p.mediaFile!.filename, mimeType: p.mediaFile!.mimeType }));
     setImporting(true);
     try {
       const data = await callFn(
@@ -301,7 +321,7 @@ export default function GooglePhotosSync() {
             <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground" />
             <h2 className="text-xl font-semibold">Conecte sua conta Google</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Autorize o acesso de leitura à sua biblioteca para visualizar fotos e álbuns. Os tokens ficam apenas nesta aba (sessionStorage).
+              Autorize o app para abrir o seletor oficial do Google Fotos. Você escolhe quais fotos compartilhar — o app só recebe as selecionadas.
             </p>
             <p className="text-xs text-muted-foreground max-w-2xl mx-auto break-all">
               Se aparecer erro 400, adicione esta URL nos redirecionamentos autorizados do OAuth: {window.location.origin}/
@@ -313,14 +333,14 @@ export default function GooglePhotosSync() {
         {connected && (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant={tab === "photos" && !currentAlbumId ? "default" : "outline"} onClick={() => loadPhotos()}>
-                <ImageIcon className="h-4 w-4 mr-1" /> Fotos recentes
+              <Button size="sm" onClick={startPicker} disabled={picking}>
+                {picking ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MousePointerClick className="h-4 w-4 mr-1" />}
+                {picking ? "Aguardando seleção..." : "Escolher fotos no Google"}
               </Button>
-              <Button size="sm" variant={tab === "albums" ? "default" : "outline"} onClick={loadAlbums}>
-                <FolderOpen className="h-4 w-4 mr-1" /> Álbuns
-              </Button>
-              {currentAlbumId && (
-                <Badge variant="secondary">Álbum atual</Badge>
+              {picking && pickerUri && (
+                <Button size="sm" variant="outline" onClick={() => window.open(pickerUri, "google-photos-picker")}>
+                  <ExternalLink className="h-4 w-4 mr-1" /> Reabrir janela do Google
+                </Button>
               )}
               <div className="ml-auto flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{selected.size} selecionada(s)</span>
@@ -331,49 +351,26 @@ export default function GooglePhotosSync() {
               </div>
             </div>
 
-            {loading && (
+            {picking && (
               <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" /> Carregando...
+                <Loader2 className="h-6 w-6 animate-spin mr-2" /> Aguardando você escolher as fotos no Google...
               </div>
             )}
 
-            {!loading && tab === "albums" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {albums.map(a => (
-                  <button
-                    key={a.id}
-                    onClick={() => loadPhotos(a.id)}
-                    className="text-left group rounded-lg overflow-hidden border border-border/40 hover:border-border transition"
-                  >
-                    <div className="aspect-square bg-muted">
-                      {a.coverPhotoBaseUrl ? (
-                        <img src={`${a.coverPhotoBaseUrl}=w320-h320-c`} alt={a.title ?? "Álbum"} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FolderOpen className="h-8 w-8" /></div>
-                      )}
-                    </div>
-                    <div className="p-2">
-                      <p className="text-sm font-medium truncate">{a.title ?? "Sem título"}</p>
-                      <p className="text-xs text-muted-foreground">{a.mediaItemsCount ?? 0} itens</p>
-                    </div>
-                  </button>
-                ))}
-                {albums.length === 0 && <p className="text-sm text-muted-foreground col-span-full text-center py-8">Nenhum álbum encontrado.</p>}
-              </div>
-            )}
-
-            {!loading && tab === "photos" && (
+            {!picking && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {photos.map(p => {
                   const isSel = selected.has(p.id);
                   const importedUrl = imported[p.id];
+                  const base = p.mediaFile?.baseUrl;
+                  if (!base) return null;
                   return (
                     <button
                       key={p.id}
                       onClick={() => toggleSelect(p.id)}
                       className={`relative aspect-square rounded-md overflow-hidden border-2 transition ${isSel ? "border-primary" : "border-transparent hover:border-border"}`}
                     >
-                      <img src={thumb(p.baseUrl)} alt={p.filename ?? p.id} loading="lazy" className="w-full h-full object-cover" />
+                      <img src={thumb(base)} alt={p.mediaFile?.filename ?? p.id} loading="lazy" className="w-full h-full object-cover" />
                       {isSel && <div className="absolute inset-0 bg-primary/20" />}
                       {importedUrl && (
                         <span className="absolute bottom-1 right-1 bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded">✓ importada</span>
@@ -381,7 +378,7 @@ export default function GooglePhotosSync() {
                     </button>
                   );
                 })}
-                {photos.length === 0 && <p className="text-sm text-muted-foreground col-span-full text-center py-8">Nenhuma foto encontrada.</p>}
+                {photos.length === 0 && <p className="text-sm text-muted-foreground col-span-full text-center py-8">Clique em "Escolher fotos no Google" para começar.</p>}
               </div>
             )}
 
