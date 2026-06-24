@@ -31,8 +31,6 @@ type MediaItem = {
 
 type AuthMode = "popup" | "redirect";
 
-const PICKER_POPUP_FEATURES = "popup=yes,width=560,height=760,menubar=no,toolbar=no,location=yes,status=yes,scrollbars=yes,resizable=yes";
-
 function parseGoogleDurationMs(value: unknown, fallbackMs: number) {
   if (typeof value !== "string") return fallbackMs;
   const match = value.match(/^(\d+(?:\.\d+)?)s$/);
@@ -259,15 +257,10 @@ export default function GooglePhotosSync() {
 
   const startPicker = useCallback(async () => {
     if (!session) return;
-    const pickerWindow = window.open("about:blank", "google-photos-picker", PICKER_POPUP_FEATURES);
-    if (pickerWindow && !pickerWindow.closed) {
-      pickerWindow.document.write("<!doctype html><title>Google Photos</title><body style='font-family:system-ui;padding:24px'>Abrindo Google Photos...</body>");
-      pickerWindow.focus();
-    }
-
     stopPolling();
     setPicking(true);
-    setPickerStatus("Criando seletor seguro do Google Photos...");
+    setPickerUri(null);
+    setPickerStatus("Criando link seguro do Google Photos...");
     setPhotos([]); setSelected(new Set());
     try {
       const data = await callFn(`google-photos-list?action=create`, { method: "GET" }, session.access_token);
@@ -276,15 +269,8 @@ export default function GooglePhotosSync() {
       if (!sessionId || !uri) throw new Error("Resposta inválida do Picker");
       sessionIdRef.current = sessionId;
       setPickerUri(uri);
-      if (pickerWindow && !pickerWindow.closed) {
-        pickerWindow.location.replace(uri);
-        pickerWindow.focus();
-        toast.info("Escolha as fotos na janela do Google que abriu.");
-        setPickerStatus("Na janela do Google, selecione as fotos e clique em Concluído.");
-      } else {
-        toast.warning("O navegador bloqueou a janela. Clique em Reabrir janela do Google.");
-        setPickerStatus("Janela bloqueada. Use o botão Reabrir janela do Google para continuar.");
-      }
+      toast.info("Link do Google Photos pronto. Toque em Abrir Google Photos.");
+      setPickerStatus("Clique em Abrir Google Photos, selecione as fotos e toque em Concluído no Google.");
 
       const intervalMs = parseGoogleDurationMs(data?.pollingConfig?.pollInterval, 2000);
       const timeoutMs = parseGoogleDurationMs(data?.pollingConfig?.timeoutIn, 10 * 60 * 1000);
@@ -307,7 +293,6 @@ export default function GooglePhotosSync() {
       }, timeoutMs);
     } catch (e: any) {
       setPicking(false);
-      if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
       setPickerStatus(`Erro ao iniciar seleção: ${e.message}`);
       toast.error(`Erro ao iniciar seleção: ${e.message}`);
       if (String(e.message).includes("401")) handleDisconnect();
@@ -408,8 +393,10 @@ export default function GooglePhotosSync() {
                 {picking ? "Aguardando seleção..." : "Escolher fotos no Google"}
               </Button>
               {picking && pickerUri && (
-                <Button size="sm" variant="outline" onClick={() => window.open(pickerUri, "google-photos-picker", PICKER_POPUP_FEATURES)}>
-                  <ExternalLink className="h-4 w-4 mr-1" /> Reabrir janela do Google
+                <Button size="sm" variant="outline" asChild>
+                  <a href={pickerUri} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-1" /> Abrir Google Photos
+                  </a>
                 </Button>
               )}
               {picking && sessionIdRef.current && (
@@ -431,6 +418,13 @@ export default function GooglePhotosSync() {
                 <div className="flex items-center">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" /> Aguardando você escolher as fotos no Google...
                 </div>
+                {pickerUri && (
+                  <Button asChild>
+                    <a href={pickerUri} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-2" /> Abrir Google Photos
+                    </a>
+                  </Button>
+                )}
                 {pickerStatus && <p className="text-sm max-w-md">{pickerStatus}</p>}
               </div>
             )}
