@@ -1,8 +1,9 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode } from "react";
 import { ClipboardCheck, History, FileText, Moon, Sun, Download, Plus, Activity, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useDarkMode } from "@/hooks/use-dark-mode";
 
 interface AppLayoutV2Props {
   children: ReactNode;
@@ -12,20 +13,8 @@ interface AppLayoutV2Props {
 }
 
 export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayoutV2Props) => {
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : true;
-  });
+  const { darkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
 
   const menuItems = [
     { icon: ClipboardCheck, label: "Nova Inspeção", value: "inspection" as const, description: "Iniciar inspeção", gradient: "from-primary to-primary-dark" },
@@ -125,7 +114,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setDarkMode(!darkMode)}
+                onClick={toggleDarkMode}
                 className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}

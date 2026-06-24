@@ -1,7 +1,8 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState } from "react";
 import { ClipboardCheck, History, FileText, Settings, Menu, X, User, Activity, Moon, Sun, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useDarkMode } from "@/hooks/use-dark-mode";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -12,20 +13,8 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : true;
-  });
+  const { darkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
 
   const NavButton = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
     <button
@@ -102,7 +91,7 @@ export const AppLayout = ({ children, activeTab, onTabChange, title }: AppLayout
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setDarkMode(!darkMode)}
+                onClick={toggleDarkMode}
                 className="rounded-xl"
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}

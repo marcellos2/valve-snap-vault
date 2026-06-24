@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import { uploadPhotoIfNeeded, determineInspectionStatus } from "@/lib/inspection-utils";
 
 interface PendingInspection {
   id: string;
@@ -34,11 +34,6 @@ export const useOfflineSync = () => {
       setPendingCount(0);
     }
   }, []);
-
-  const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
-    if (!photoData) return null;
-    return uploadPhotoWithRetry(photoData, fileName);
-  };
 
   const syncPendingData = useCallback(async () => {
     // Prevent multiple concurrent syncs
@@ -87,30 +82,18 @@ export const useOfflineSync = () => {
           let photoDuringUrl: string | null = null;
           let photoFinalUrl: string | null = null;
 
-          if (inspection.photoInitial) {
-            photoInitialUrl = inspection.photoInitial.startsWith('data:')
-              ? await uploadPhoto(inspection.photoInitial, 'initial')
-              : inspection.photoInitial;
-          }
-          if (inspection.photoDuring) {
-            photoDuringUrl = inspection.photoDuring.startsWith('data:')
-              ? await uploadPhoto(inspection.photoDuring, 'during')
-              : inspection.photoDuring;
-          }
-          if (inspection.photoFinal) {
-            photoFinalUrl = inspection.photoFinal.startsWith('data:')
-              ? await uploadPhoto(inspection.photoFinal, 'final')
-              : inspection.photoFinal;
-          }
+          photoInitialUrl = await uploadPhotoIfNeeded(inspection.photoInitial, 'initial');
+          photoDuringUrl = await uploadPhotoIfNeeded(inspection.photoDuring, 'during');
+          photoFinalUrl = await uploadPhotoIfNeeded(inspection.photoFinal, 'final');
 
-          const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
+          const status = determineInspectionStatus(photoInitialUrl, photoDuringUrl, photoFinalUrl);
           
           const { error } = await supabase.from("inspection_records").insert({
             valve_code: inspection.valveCode,
             photo_initial_url: photoInitialUrl,
             photo_during_url: photoDuringUrl,
             photo_final_url: photoFinalUrl,
-            status: hasAllPhotos ? 'concluido' : 'em_andamento',
+            status,
           });
 
           if (!error) {
