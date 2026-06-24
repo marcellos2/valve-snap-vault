@@ -31,6 +31,19 @@ type MediaItem = {
 
 type AuthMode = "popup" | "redirect";
 
+const PICKER_POPUP_FEATURES = "popup=yes,width=560,height=760,menubar=no,toolbar=no,location=yes,status=yes,scrollbars=yes,resizable=yes";
+
+function parseGoogleDurationMs(value: unknown, fallbackMs: number) {
+  if (typeof value !== "string") return fallbackMs;
+  const match = value.match(/^(\d+(?:\.\d+)?)s$/);
+  if (!match) return fallbackMs;
+  return Math.max(1000, Number(match[1]) * 1000);
+}
+
+function withAutoClose(uri: string) {
+  return uri.endsWith("/autoclose") ? uri : `${uri.replace(/\/$/, "")}/autoclose`;
+}
+
 function buildLoginUrl(mode: AuthMode) {
   const redirectUri = `${window.location.origin}/`;
   const params = new URLSearchParams({
@@ -61,7 +74,10 @@ async function callFn(path: string, init: RequestInit = {}, accessToken?: string
   if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, { ...init, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `request_failed_${res.status}`);
+  if (!res.ok) {
+    const googleMessage = data?.detail?.error?.message || data?.detail?.message;
+    throw new Error(googleMessage || data?.error || `request_failed_${res.status}`);
+  }
   return data;
 }
 
@@ -75,6 +91,7 @@ export default function GooglePhotosSync() {
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState<Record<string, string>>({});
   const pollRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
 
   const connected = !!session;
@@ -191,36 +208,60 @@ export default function GooglePhotosSync() {
     setPhotos([]); setSelected(new Set()); setImported({});
     setPickerUri(null);
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     sessionIdRef.current = null;
   }, []);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
   }, []);
 
   const fetchPickedItems = useCallback(async (sessionId: string) => {
     if (!session) return;
-    const qs = new URLSearchParams({ action: "items", sessionId, pageSize: "100" });
-    const data = await callFn(`google-photos-list?${qs}`, {}, session.access_token);
-    setPhotos((data.mediaItems ?? []) as MediaItem[]);
+    const allItems: MediaItem[] = [];
+    let pageToken = "";
+    do {
+      const qs = new URLSearchParams({ action: "items", sessionId, pageSize: "100" });
+      if (pageToken) qs.set("pageToken", pageToken);
+      const data = await callFn(`google-photos-list?${qs}`, {}, session.access_token);
+      allItems.push(...((data.mediaItems ?? []) as MediaItem[]));
+      pageToken = String(data.nextPageToken ?? "");
+    } while (pageToken);
+    setPhotos(allItems);
+    if (allItems.length === 0) {
+      toast.info("Nenhuma foto foi selecionada no Google.");
+    }
   }, [session]);
 
   const startPicker = useCallback(async () => {
     if (!session) return;
+    const pickerWindow = window.open("about:blank", "google-photos-picker", PICKER_POPUP_FEATURES);
+    if (pickerWindow && !pickerWindow.closed) {
+      pickerWindow.document.write("<!doctype html><title>Google Photos</title><body style='font-family:system-ui;padding:24px'>Abrindo Google Photos...</body>");
+      pickerWindow.focus();
+    }
+
     stopPolling();
     setPicking(true);
     setPhotos([]); setSelected(new Set());
     try {
       const data = await callFn(`google-photos-list?action=create`, { method: "GET" }, session.access_token);
       const sessionId = String(data.id ?? "");
-      const uri = String(data.pickerUri ?? "");
+      const uri = withAutoClose(String(data.pickerUri ?? ""));
       if (!sessionId || !uri) throw new Error("Resposta inválida do Picker");
       sessionIdRef.current = sessionId;
       setPickerUri(uri);
-      window.open(uri, "google-photos-picker", "popup=yes,width=520,height=720");
-      toast.info("Escolha as fotos na janela do Google que abriu.");
+      if (pickerWindow && !pickerWindow.closed) {
+        pickerWindow.location.replace(uri);
+        pickerWindow.focus();
+        toast.info("Escolha as fotos na janela do Google que abriu.");
+      } else {
+        toast.warning("O navegador bloqueou a janela. Clique em Reabrir janela do Google.");
+      }
 
-      const intervalMs = Math.max(2000, Number(data?.pollingConfig?.pollInterval?.replace?.("s", "") ?? 2) * 1000);
+      const intervalMs = parseGoogleDurationMs(data?.pollingConfig?.pollInterval, 2000);
+      const timeoutMs = parseGoogleDurationMs(data?.pollingConfig?.timeoutIn, 10 * 60 * 1000);
       pollRef.current = window.setInterval(async () => {
         try {
           const poll = await callFn(`google-photos-list?action=poll&sessionId=${encodeURIComponent(sessionId)}`, {}, session.access_token);
@@ -237,8 +278,14 @@ export default function GooglePhotosSync() {
           if (String(e.message).includes("401")) handleDisconnect();
         }
       }, intervalMs);
+      timeoutRef.current = window.setTimeout(() => {
+        stopPolling();
+        setPicking(false);
+        toast.error("Tempo esgotado. Abra o seletor novamente e confirme a seleção no Google.");
+      }, timeoutMs);
     } catch (e: any) {
       setPicking(false);
+      if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
       toast.error(`Erro ao iniciar seleção: ${e.message}`);
       if (String(e.message).includes("401")) handleDisconnect();
     }
@@ -338,7 +385,7 @@ export default function GooglePhotosSync() {
                 {picking ? "Aguardando seleção..." : "Escolher fotos no Google"}
               </Button>
               {picking && pickerUri && (
-                <Button size="sm" variant="outline" onClick={() => window.open(pickerUri, "google-photos-picker")}>
+                <Button size="sm" variant="outline" onClick={() => window.open(pickerUri, "google-photos-picker", PICKER_POPUP_FEATURES)}>
                   <ExternalLink className="h-4 w-4 mr-1" /> Reabrir janela do Google
                 </Button>
               )}
