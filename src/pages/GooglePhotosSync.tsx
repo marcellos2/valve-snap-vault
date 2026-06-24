@@ -48,9 +48,16 @@ function loadSession(): Session | null {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as Session;
-    if (s.expires_at && s.expires_at < Date.now()) return null;
+    if (s.expires_at && s.expires_at < Date.now()) {
+      sessionStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
     return s;
-  } catch { return null; }
+  } catch (err) {
+    console.warn("Failed to parse stored Google Photos session, clearing:", err);
+    sessionStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
 }
 
 async function callFn(path: string, init: RequestInit = {}, accessToken?: string) {
@@ -60,7 +67,10 @@ async function callFn(path: string, init: RequestInit = {}, accessToken?: string
   if (accessToken) headers.set("x-google-access-token", accessToken);
   if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, { ...init, headers });
-  const data = await res.json().catch(() => ({}));
+  const data = await res.json().catch((parseErr) => {
+    console.warn(`Failed to parse JSON response from ${path}:`, parseErr);
+    return {};
+  });
   if (!res.ok) throw new Error(data?.error || `request_failed_${res.status}`);
   return data;
 }

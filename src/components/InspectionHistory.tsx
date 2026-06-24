@@ -486,6 +486,12 @@ export const InspectionHistory = ({
           document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 100);
           toast({ title: "Download concluído" });
+        } else {
+          toast({
+            title: "Erro",
+            description: "Falha ao gerar arquivo de imagem para download.",
+            variant: "destructive",
+          });
         }
       }, "image/png", 1.0);
     } catch (error) {

@@ -319,7 +319,9 @@ const loadThemeConfig = (): ThemeConfig => {
     if (saved) {
       return JSON.parse(saved);
     }
-  } catch {}
+  } catch (err) {
+    console.warn("Failed to parse saved theme config, using default:", err);
+  }
   return { themeId: DEFAULT_THEME_ID };
 };
 

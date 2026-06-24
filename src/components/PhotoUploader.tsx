@@ -3,6 +3,7 @@ import { Camera, Upload, RotateCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
+import { useToast } from "@/hooks/use-toast";
 
 interface PhotoUploaderProps {
   title: string;
@@ -21,6 +22,7 @@ export const PhotoUploader = ({
   onRotate,
   onRemove,
 }: PhotoUploaderProps) => {
+  const { toast } = useToast();
   const [showCamera, setShowCamera] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +33,14 @@ export const PhotoUploader = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         onPhotoChange(reader.result as string);
+      };
+      reader.onerror = () => {
+        console.error("Failed to read file:", file.name);
+        toast({
+          title: "Erro ao ler arquivo",
+          description: "Não foi possível carregar a imagem. Tente novamente.",
+          variant: "destructive",
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -71,7 +81,21 @@ export const PhotoUploader = ({
         reader.onloadend = () => {
           onPhotoChange(reader.result as string);
         };
+        reader.onerror = () => {
+          console.error("Failed to read dropped file:", file.name);
+          toast({
+            title: "Erro ao ler arquivo",
+            description: "Não foi possível carregar a imagem arrastada. Tente novamente.",
+            variant: "destructive",
+          });
+        };
         reader.readAsDataURL(file);
+      } else {
+        toast({
+          title: "Arquivo inválido",
+          description: "Por favor, selecione um arquivo de imagem.",
+          variant: "destructive",
+        });
       }
     }
   };
