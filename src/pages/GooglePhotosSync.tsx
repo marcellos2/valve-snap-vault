@@ -87,6 +87,7 @@ export default function GooglePhotosSync() {
   const [photos, setPhotos] = useState<MediaItem[]>([]);
   const [picking, setPicking] = useState(false);
   const [pickerUri, setPickerUri] = useState<string | null>(null);
+  const [pickerStatus, setPickerStatus] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState<Record<string, string>>({});
@@ -207,6 +208,7 @@ export default function GooglePhotosSync() {
     setSession(null);
     setPhotos([]); setSelected(new Set()); setImported({});
     setPickerUri(null);
+    setPickerStatus(null);
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     sessionIdRef.current = null;
@@ -229,10 +231,31 @@ export default function GooglePhotosSync() {
       pageToken = String(data.nextPageToken ?? "");
     } while (pageToken);
     setPhotos(allItems);
+    setSelected(new Set(allItems.map((item) => item.id)));
     if (allItems.length === 0) {
       toast.info("Nenhuma foto foi selecionada no Google.");
+      setPickerStatus("Nenhuma foto foi retornada. Selecione as fotos no Google e toque em Concluído.");
+    } else {
+      setPickerStatus(`${allItems.length} foto(s) carregada(s) e já selecionada(s) para importar.`);
     }
   }, [session]);
+
+  const checkPickerSelection = useCallback(async (sessionId = sessionIdRef.current) => {
+    if (!session || !sessionId) return false;
+    const poll = await callFn(`google-photos-list?action=poll&sessionId=${encodeURIComponent(sessionId)}`, {}, session.access_token);
+    if (!poll.mediaItemsSet) {
+      setPickerStatus("Ainda aguardando a confirmação no Google. Selecione as fotos e clique em Concluído.");
+      return false;
+    }
+
+    stopPolling();
+    setPicking(false);
+    await fetchPickedItems(sessionId);
+    void callFn(`google-photos-list?action=delete&sessionId=${encodeURIComponent(sessionId)}`, {}, session.access_token).catch(() => null);
+    sessionIdRef.current = null;
+    toast.success("Fotos carregadas");
+    return true;
+  }, [session, stopPolling, fetchPickedItems]);
 
   const startPicker = useCallback(async () => {
     if (!session) return;
@@ -244,6 +267,7 @@ export default function GooglePhotosSync() {
 
     stopPolling();
     setPicking(true);
+    setPickerStatus("Criando seletor seguro do Google Photos...");
     setPhotos([]); setSelected(new Set());
     try {
       const data = await callFn(`google-photos-list?action=create`, { method: "GET" }, session.access_token);
@@ -256,24 +280,21 @@ export default function GooglePhotosSync() {
         pickerWindow.location.replace(uri);
         pickerWindow.focus();
         toast.info("Escolha as fotos na janela do Google que abriu.");
+        setPickerStatus("Na janela do Google, selecione as fotos e clique em Concluído.");
       } else {
         toast.warning("O navegador bloqueou a janela. Clique em Reabrir janela do Google.");
+        setPickerStatus("Janela bloqueada. Use o botão Reabrir janela do Google para continuar.");
       }
 
       const intervalMs = parseGoogleDurationMs(data?.pollingConfig?.pollInterval, 2000);
       const timeoutMs = parseGoogleDurationMs(data?.pollingConfig?.timeoutIn, 10 * 60 * 1000);
       pollRef.current = window.setInterval(async () => {
         try {
-          const poll = await callFn(`google-photos-list?action=poll&sessionId=${encodeURIComponent(sessionId)}`, {}, session.access_token);
-          if (poll.mediaItemsSet) {
-            stopPolling();
-            setPicking(false);
-            await fetchPickedItems(sessionId);
-            toast.success("Fotos carregadas");
-          }
+          await checkPickerSelection(sessionId);
         } catch (e: any) {
           stopPolling();
           setPicking(false);
+          setPickerStatus(`Erro ao verificar seleção: ${e.message}`);
           toast.error(`Erro no polling: ${e.message}`);
           if (String(e.message).includes("401")) handleDisconnect();
         }
@@ -281,15 +302,17 @@ export default function GooglePhotosSync() {
       timeoutRef.current = window.setTimeout(() => {
         stopPolling();
         setPicking(false);
+        setPickerStatus("Tempo esgotado. Abra o seletor novamente e confirme a seleção no Google.");
         toast.error("Tempo esgotado. Abra o seletor novamente e confirme a seleção no Google.");
       }, timeoutMs);
     } catch (e: any) {
       setPicking(false);
       if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
+      setPickerStatus(`Erro ao iniciar seleção: ${e.message}`);
       toast.error(`Erro ao iniciar seleção: ${e.message}`);
       if (String(e.message).includes("401")) handleDisconnect();
     }
-  }, [session, stopPolling, fetchPickedItems, handleDisconnect]);
+  }, [session, stopPolling, checkPickerSelection, handleDisconnect]);
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
@@ -389,6 +412,11 @@ export default function GooglePhotosSync() {
                   <ExternalLink className="h-4 w-4 mr-1" /> Reabrir janela do Google
                 </Button>
               )}
+              {picking && sessionIdRef.current && (
+                <Button size="sm" variant="outline" onClick={() => void checkPickerSelection()}>
+                  <Download className="h-4 w-4 mr-1" /> Já selecionei, carregar
+                </Button>
+              )}
               <div className="ml-auto flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{selected.size} selecionada(s)</span>
                 <Button size="sm" disabled={selected.size === 0 || importing} onClick={handleImport}>
@@ -399,9 +427,16 @@ export default function GooglePhotosSync() {
             </div>
 
             {picking && (
-              <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" /> Aguardando você escolher as fotos no Google...
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground text-center">
+                <div className="flex items-center">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" /> Aguardando você escolher as fotos no Google...
+                </div>
+                {pickerStatus && <p className="text-sm max-w-md">{pickerStatus}</p>}
               </div>
+            )}
+
+            {!picking && pickerStatus && photos.length > 0 && (
+              <p className="text-sm text-muted-foreground text-center">{pickerStatus}</p>
             )}
 
             {!picking && (
