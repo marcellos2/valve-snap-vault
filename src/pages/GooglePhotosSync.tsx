@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, LogIn, LogOut, Download, Image as ImageIcon, MousePointerClick, ExternalLink } from "lucide-react";
-import { getGoogleDriveSessionStatus } from "@/lib/upload-to-drive";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -57,7 +56,7 @@ function buildLoginUrl(mode: AuthMode) {
 
 function loadSession(): Session | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as Session;
     if (s.expires_at && s.expires_at < Date.now()) return null;
@@ -114,11 +113,9 @@ export default function GooglePhotosSync() {
       expires_at: Date.now() + (Number(payload.expires_in ?? 3600) - 60) * 1000,
       scope: payload.scope as string | undefined,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sess));
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(sess));
     setSession(sess);
-    const driveStatus = getGoogleDriveSessionStatus();
-    toast.success(driveStatus.canUpload ? "Google Photos e Drive conectados" : "Google Photos conectado");
+    toast.success("Google Photos conectado");
   }, []);
 
   useEffect(() => {
@@ -205,7 +202,6 @@ export default function GooglePhotosSync() {
   }, []);
 
   const handleDisconnect = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(STORAGE_KEY);
     setSession(null);
     setPhotos([]); setSelected(new Set()); setImported({});
@@ -341,9 +337,7 @@ export default function GooglePhotosSync() {
 
   const headerStatus = useMemo(() => {
     if (!connected) return <Badge variant="secondary">Desconectado</Badge>;
-    const driveStatus = getGoogleDriveSessionStatus();
-    if (!driveStatus.canUpload) return <Badge variant="destructive">Reconectar Drive</Badge>;
-    return <Badge className="bg-emerald-600 hover:bg-emerald-600">Drive conectado</Badge>;
+    return <Badge className="bg-emerald-600 hover:bg-emerald-600">Conectado</Badge>;
   }, [connected]);
 
   return (
@@ -358,7 +352,7 @@ export default function GooglePhotosSync() {
               <h1 className="text-lg font-semibold flex items-center gap-2 truncate">
                 <ImageIcon className="h-5 w-5 shrink-0" /> Google Photos Sync
               </h1>
-              <p className="text-xs text-muted-foreground">Módulo isolado · OAuth 2.0 · Google Drive</p>
+              <p className="text-xs text-muted-foreground">Módulo isolado · OAuth 2.0 · readonly</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -393,12 +387,6 @@ export default function GooglePhotosSync() {
 
         {connected && (
           <>
-            {!getGoogleDriveSessionStatus().canUpload && (
-              <Card className="p-4 border-destructive/40 bg-destructive/10 text-sm text-destructive">
-                Saia e conecte novamente para liberar o envio direto para a pasta Inspeções Válvulas no Google Drive.
-              </Card>
-            )}
-
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" onClick={startPicker} disabled={picking}>
                 {picking ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MousePointerClick className="h-4 w-4 mr-1" />}

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getGoogleDriveSessionStatus, hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
+import { hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
 
 /**
  * Compress a base64 image to reduce upload size on slow networks (4G/cellular).
@@ -150,7 +150,7 @@ export const uploadPhotoWithRetry = async (
   }
 
   // If user is logged into Google (same session as Google Photos), upload
-  // directly to their Google Drive "Inspeções Válvulas" folder instead of backend storage.
+  // directly to their Google Drive "Inspeções Válvulas" folder instead of Supabase.
   if (hasGoogleDriveSession()) {
     try {
       onProgress?.({ attempt: 1, maxAttempts: profile.attempts, phase: "uploading" });
@@ -158,17 +158,7 @@ export const uploadPhotoWithRetry = async (
       const driveUrl = await uploadBlobToDrive(blob, driveName);
       if (driveUrl) return driveUrl;
     } catch (err) {
-      console.error("Google Drive upload failed:", err);
-      throw err instanceof Error ? err : new Error("Falha ao enviar foto para o Google Drive.");
-    }
-  } else {
-    const driveStatus = getGoogleDriveSessionStatus();
-    if (driveStatus.connected) {
-      throw new Error(
-        driveStatus.reason === "expired"
-          ? "Sua sessão do Google expirou. Entre novamente no Google Photos Sync antes de salvar."
-          : "Entre novamente no Google Photos Sync para autorizar o envio ao Google Drive."
-      );
+      console.warn("Google Drive upload failed, falling back to Supabase Storage:", err);
     }
   }
 

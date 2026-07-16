@@ -44,7 +44,7 @@ Deno.serve((req) => {
     response_type: 'code',
     scope: [
       'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
-      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/drive.file',
     ].join(' '),
     access_type: 'offline',
     prompt: 'consent',
