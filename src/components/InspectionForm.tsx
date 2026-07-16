@@ -28,7 +28,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
   const { toast } = useToast();
   const { isOnline, savePendingInspection } = useOfflineSync();
   const valveCodeRef = useRef<HTMLInputElement>(null);
-  const [valveCode, setValveCode] = useState(editingRecord?.valve_code || "");
+  const [valveCode, setValveCode] = useState((editingRecord?.valve_code || "").toUpperCase());
   const [photoInitial, setPhotoInitial] = useState<string | null>(editingRecord?.photo_initial_url || null);
   const [photoDuring, setPhotoDuring] = useState<string | null>(editingRecord?.photo_during_url || null);
   const [photoFinal, setPhotoFinal] = useState<string | null>(editingRecord?.photo_final_url || null);
@@ -39,7 +39,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
   useEffect(() => {
     if (editingRecord) {
-      setValveCode(editingRecord.valve_code || "");
+      setValveCode((editingRecord.valve_code || "").toUpperCase());
       setPhotoInitial(editingRecord.photo_initial_url);
       setPhotoDuring(editingRecord.photo_during_url);
       setPhotoFinal(editingRecord.photo_final_url);
@@ -401,9 +401,13 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
               ref={valveCodeRef}
               id="valveCode"
               value={valveCode}
-              onChange={(e) => setValveCode(e.target.value)}
+              onChange={(e) => setValveCode(e.target.value.toUpperCase())}
               placeholder="Ex: VLV-001"
-              className="h-11 bg-background border-2 border-border text-foreground focus:border-primary transition-all duration-200"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              style={{ textTransform: "uppercase" }}
+              className="h-11 bg-background border-2 border-border text-foreground focus:border-primary transition-all duration-200 uppercase"
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
