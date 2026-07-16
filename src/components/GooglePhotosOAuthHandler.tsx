@@ -59,12 +59,14 @@ export function GooglePhotosOAuthHandler() {
         }
 
         if (payload.access_token) {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+          const sessionPayload = JSON.stringify({
             access_token: payload.access_token,
             refresh_token: payload.refresh_token ?? null,
             expires_at: Date.now() + (Number(payload.expires_in ?? 3600) - 60) * 1000,
             scope: payload.scope,
-          }));
+          });
+          localStorage.setItem(STORAGE_KEY, sessionPayload);
+          sessionStorage.setItem(STORAGE_KEY, sessionPayload);
         }
         window.location.replace(state.returnTo || "/google-photos-sync");
       } catch (e: any) {
