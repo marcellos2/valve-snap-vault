@@ -42,7 +42,10 @@ Deno.serve((req) => {
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+    scope: [
+      'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+      'https://www.googleapis.com/auth/drive.file',
+    ].join(' '),
     access_type: 'offline',
     prompt: 'consent',
     include_granted_scopes: 'true',
