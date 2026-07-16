@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
 
 /**
  * Compress a base64 image to reduce upload size on slow networks (4G/cellular).
@@ -146,6 +147,19 @@ export const uploadPhotoWithRetry = async (
     const arr = new Uint8Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
     blob = new Blob([arr], { type: "image/jpeg" });
+  }
+
+  // If user is logged into Google (same session as Google Photos), upload
+  // directly to their Google Drive "Inspeções Válvulas" folder instead of Supabase.
+  if (hasGoogleDriveSession()) {
+    try {
+      onProgress?.({ attempt: 1, maxAttempts: profile.attempts, phase: "uploading" });
+      const driveName = `${Date.now()}-${fileName}.jpg`;
+      const driveUrl = await uploadBlobToDrive(blob, driveName);
+      if (driveUrl) return driveUrl;
+    } catch (err) {
+      console.warn("Google Drive upload failed, falling back to Supabase Storage:", err);
+    }
   }
 
   let lastError: unknown = null;
