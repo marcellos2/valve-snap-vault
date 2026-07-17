@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import { buildCompositeImage } from "@/lib/build-composite";
+import { uploadBlobToDrive } from "@/lib/upload-to-drive";
+import { getGoogleDriveSessionStatus, hasGoogleDriveSession } from "@/lib/upload-to-drive";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
