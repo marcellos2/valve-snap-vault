@@ -440,7 +440,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
       <Button
         onClick={handleSave}
-        disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
+        disabled={isSaving || !photoInitial || !photoDuring || !photoFinal}
         className="w-full h-12 gradient-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
       >
         {isSaving ? (
@@ -461,9 +461,9 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         )}
       </Button>
       
-      {!editingRecord && (photoInitial || photoDuring || photoFinal) && isOnline && (
+      {(!photoInitial || !photoDuring || !photoFinal) && (
         <p className="text-xs text-muted-foreground text-center bg-muted/50 border border-border rounded-lg p-3">
-          💡 Você pode salvar com fotos parciais e adicionar as restantes depois
+          💡 Capture as 3 fotos para gerar a imagem única e enviá-la ao Google Drive.
         </p>
       )}
 
