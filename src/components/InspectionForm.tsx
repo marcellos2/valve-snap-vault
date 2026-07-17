@@ -170,10 +170,10 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       return;
     }
 
-    if (!photoInitial && !photoDuring && !photoFinal) {
+    if (!photoInitial || !photoDuring || !photoFinal) {
       toast({
-        title: "Atenção",
-        description: "Adicione pelo menos uma foto",
+        title: "Fotos incompletas",
+        description: "Capture as 3 fotos (início, durante e término) antes de salvar. O upload só é feito com a inspeção completa.",
         variant: "destructive",
       });
       return;
@@ -203,38 +203,53 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       return;
     }
 
-    let photoInitialUrl = editingRecord?.photo_initial_url || null;
-    let photoDuringUrl = editingRecord?.photo_during_url || null;
-    let photoFinalUrl = editingRecord?.photo_final_url || null;
+    let compositeUrl: string | null = null;
 
     try {
+      // Build a single composite image (report layout) from the 3 photos.
+      const compositeBlob = await buildCompositeImage({
+        initial: photoInitial,
+        during: photoDuring,
+        final: photoFinal,
+      });
 
-      if (photoInitial && photoInitial.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoInitial, "initial");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto inicial");
-        photoInitialUrl = uploadedUrl;
-      } else if (photoInitial) {
-        photoInitialUrl = photoInitial;
-      }
-      
-      if (photoDuring && photoDuring.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoDuring, "during");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto durante");
-        photoDuringUrl = uploadedUrl;
-      } else if (photoDuring) {
-        photoDuringUrl = photoDuring;
-      }
-      
-      if (photoFinal && photoFinal.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoFinal, "final");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto final");
-        photoFinalUrl = uploadedUrl;
-      } else if (photoFinal) {
-        photoFinalUrl = photoFinal;
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, "0");
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const yyyy = now.getFullYear();
+      const safeCode = (valveCode || "SEM-CODIGO").replace(/[^\w\-]/g, "_");
+      const fileName = `inspecao-${safeCode}-${dd}-${mm}-${yyyy}.jpg`;
+
+      if (hasGoogleDriveSession()) {
+        // Upload single composite directly to Google Drive.
+        const url = await uploadBlobToDrive(compositeBlob, fileName);
+        if (!url) throw new Error("Falha ao enviar imagem para o Google Drive");
+        compositeUrl = url;
+      } else {
+        const driveStatus = getGoogleDriveSessionStatus();
+        if (driveStatus.connected) {
+          throw new Error(
+            driveStatus.reason === "expired"
+              ? "Sua sessão do Google expirou. Entre novamente no Google Photos Sync antes de salvar."
+              : "Entre novamente no Google Photos Sync para autorizar o envio ao Google Drive."
+          );
+        }
+        // Fallback: convert blob → dataURL and use the retry uploader (backend storage).
+        const reader = new FileReader();
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error("Falha ao ler imagem composta"));
+          reader.readAsDataURL(compositeBlob);
+        });
+        const url = await uploadPhoto(dataUrl, fileName.replace(/\.jpg$/i, ""));
+        if (!url) throw new Error("Falha ao enviar imagem composta");
+        compositeUrl = url;
       }
 
-      const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
-      const status = hasAllPhotos ? 'concluido' : 'em_andamento';
+      const photoInitialUrl = compositeUrl;
+      const photoDuringUrl = compositeUrl;
+      const photoFinalUrl = compositeUrl;
+      const status: 'concluido' = 'concluido';
 
       let error;
       
@@ -269,15 +284,9 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         throw error;
       }
 
-      const allPhotosPresent = (photoInitialUrl || editingRecord?.photo_initial_url) && 
-                               (photoDuringUrl || editingRecord?.photo_during_url) && 
-                               (photoFinalUrl || editingRecord?.photo_final_url);
-
       toast({
         title: "Sucesso!",
-        description: allPhotosPresent 
-          ? "Inspeção concluída com sucesso" 
-          : "Inspeção salva. Você pode adicionar as fotos restantes depois",
+        description: "Inspeção concluída e enviada como imagem única.",
       });
 
       setValveCode("");
@@ -297,9 +306,9 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       if (!editingRecord) {
         const savedLocally = savePendingInspection({
           valveCode,
-          photoInitial: photoInitialUrl ?? photoInitial,
-          photoDuring: photoDuringUrl ?? photoDuring,
-          photoFinal: photoFinalUrl ?? photoFinal,
+          photoInitial: compositeUrl ?? photoInitial,
+          photoDuring: compositeUrl ?? photoDuring,
+          photoFinal: compositeUrl ?? photoFinal,
         });
 
         if (savedLocally) {
