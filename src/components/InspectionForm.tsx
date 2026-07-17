@@ -246,8 +246,10 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         compositeUrl = url;
       }
 
-      const photoInitialUrl = compositeUrl;
-      const photoDuringUrl = compositeUrl;
+      // Store the composite URL only in photo_final_url so the edit view
+      // doesn't show the same image repeated in all three slots.
+      const photoInitialUrl = null;
+      const photoDuringUrl = null;
       const photoFinalUrl = compositeUrl;
       const status: 'concluido' = 'concluido';
 
