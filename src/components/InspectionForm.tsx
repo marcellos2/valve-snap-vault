@@ -9,9 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
-import { buildCompositeImage } from "@/lib/build-composite";
-import { uploadBlobToDrive } from "@/lib/upload-to-drive";
-import { getGoogleDriveSessionStatus, hasGoogleDriveSession } from "@/lib/upload-to-drive";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
@@ -170,10 +167,10 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       return;
     }
 
-    if (!photoInitial || !photoDuring || !photoFinal) {
+    if (!photoInitial && !photoDuring && !photoFinal) {
       toast({
-        title: "Fotos incompletas",
-        description: "Capture as 3 fotos (início, durante e término) antes de salvar. O upload só é feito com a inspeção completa.",
+        title: "Atenção",
+        description: "Adicione pelo menos uma foto",
         variant: "destructive",
       });
       return;
@@ -203,55 +200,38 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       return;
     }
 
-    let compositeUrl: string | null = null;
+    let photoInitialUrl = editingRecord?.photo_initial_url || null;
+    let photoDuringUrl = editingRecord?.photo_during_url || null;
+    let photoFinalUrl = editingRecord?.photo_final_url || null;
 
     try {
-      // Build a single composite image (report layout) from the 3 photos.
-      const compositeBlob = await buildCompositeImage({
-        initial: photoInitial,
-        during: photoDuring,
-        final: photoFinal,
-      });
 
-      const now = new Date();
-      const dd = String(now.getDate()).padStart(2, "0");
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const yyyy = now.getFullYear();
-      const safeCode = (valveCode || "SEM-CODIGO").replace(/[^\w\-]/g, "_");
-      const fileName = `inspecao-${safeCode}-${dd}-${mm}-${yyyy}.jpg`;
-
-      if (hasGoogleDriveSession()) {
-        // Upload single composite directly to Google Drive.
-        const url = await uploadBlobToDrive(compositeBlob, fileName);
-        if (!url) throw new Error("Falha ao enviar imagem para o Google Drive");
-        compositeUrl = url;
-      } else {
-        const driveStatus = getGoogleDriveSessionStatus();
-        if (driveStatus.connected) {
-          throw new Error(
-            driveStatus.reason === "expired"
-              ? "Sua sessão do Google expirou. Entre novamente no Google Photos Sync antes de salvar."
-              : "Entre novamente no Google Photos Sync para autorizar o envio ao Google Drive."
-          );
-        }
-        // Fallback: convert blob → dataURL and use the retry uploader (backend storage).
-        const reader = new FileReader();
-        const dataUrl: string = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error("Falha ao ler imagem composta"));
-          reader.readAsDataURL(compositeBlob);
-        });
-        const url = await uploadPhoto(dataUrl, fileName.replace(/\.jpg$/i, ""));
-        if (!url) throw new Error("Falha ao enviar imagem composta");
-        compositeUrl = url;
+      if (photoInitial && photoInitial.startsWith('data:')) {
+        const uploadedUrl = await uploadPhoto(photoInitial, "initial");
+        if (!uploadedUrl) throw new Error("Falha ao enviar foto inicial");
+        photoInitialUrl = uploadedUrl;
+      } else if (photoInitial) {
+        photoInitialUrl = photoInitial;
+      }
+      
+      if (photoDuring && photoDuring.startsWith('data:')) {
+        const uploadedUrl = await uploadPhoto(photoDuring, "during");
+        if (!uploadedUrl) throw new Error("Falha ao enviar foto durante");
+        photoDuringUrl = uploadedUrl;
+      } else if (photoDuring) {
+        photoDuringUrl = photoDuring;
+      }
+      
+      if (photoFinal && photoFinal.startsWith('data:')) {
+        const uploadedUrl = await uploadPhoto(photoFinal, "final");
+        if (!uploadedUrl) throw new Error("Falha ao enviar foto final");
+        photoFinalUrl = uploadedUrl;
+      } else if (photoFinal) {
+        photoFinalUrl = photoFinal;
       }
 
-      // Store the composite URL only in photo_final_url so the edit view
-      // doesn't show the same image repeated in all three slots.
-      const photoInitialUrl = null;
-      const photoDuringUrl = null;
-      const photoFinalUrl = compositeUrl;
-      const status: 'concluido' = 'concluido';
+      const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
+      const status = hasAllPhotos ? 'concluido' : 'em_andamento';
 
       let error;
       
@@ -286,9 +266,15 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         throw error;
       }
 
+      const allPhotosPresent = (photoInitialUrl || editingRecord?.photo_initial_url) && 
+                               (photoDuringUrl || editingRecord?.photo_during_url) && 
+                               (photoFinalUrl || editingRecord?.photo_final_url);
+
       toast({
         title: "Sucesso!",
-        description: "Inspeção concluída e enviada como imagem única.",
+        description: allPhotosPresent 
+          ? "Inspeção concluída com sucesso" 
+          : "Inspeção salva. Você pode adicionar as fotos restantes depois",
       });
 
       setValveCode("");
@@ -308,9 +294,9 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       if (!editingRecord) {
         const savedLocally = savePendingInspection({
           valveCode,
-          photoInitial: compositeUrl ?? photoInitial,
-          photoDuring: compositeUrl ?? photoDuring,
-          photoFinal: compositeUrl ?? photoFinal,
+          photoInitial: photoInitialUrl ?? photoInitial,
+          photoDuring: photoDuringUrl ?? photoDuring,
+          photoFinal: photoFinalUrl ?? photoFinal,
         });
 
         if (savedLocally) {
@@ -442,7 +428,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
       <Button
         onClick={handleSave}
-        disabled={isSaving || !photoInitial || !photoDuring || !photoFinal}
+        disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
         className="w-full h-12 gradient-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
       >
         {isSaving ? (
@@ -463,9 +449,9 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         )}
       </Button>
       
-      {(!photoInitial || !photoDuring || !photoFinal) && (
+      {!editingRecord && (photoInitial || photoDuring || photoFinal) && isOnline && (
         <p className="text-xs text-muted-foreground text-center bg-muted/50 border border-border rounded-lg p-3">
-          💡 Capture as 3 fotos para gerar a imagem única e enviá-la ao Google Drive.
+          💡 Você pode salvar com fotos parciais e adicionar as restantes depois
         </p>
       )}
 
