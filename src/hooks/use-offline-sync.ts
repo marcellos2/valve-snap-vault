@@ -29,11 +29,17 @@ export const useOfflineSync = () => {
       const inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
       // Only count pending items, not synced or syncing
       const pendingItems = inspections.filter(i => i.status === 'pending' || i.status === 'failed');
-      setPendingCount(pendingItems.length);
+      getLocalInspectionRecords()
+        .then((records) => {
+          const localPending = records.filter((r) => r.sync_status === 'pending' || r.sync_status === 'failed');
+          setPendingCount(pendingItems.length + localPending.length);
+        })
+        .catch(() => setPendingCount(pendingItems.length));
     } catch {
       setPendingCount(0);
     }
   }, []);
+
 
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
     if (!photoData) return null;
