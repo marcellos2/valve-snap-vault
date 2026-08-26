@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import { saveInspection } from "@/lib/inspections-repo";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {

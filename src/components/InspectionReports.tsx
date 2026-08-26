@@ -27,18 +27,8 @@ export const InspectionReports = () => {
     const fetchRecords = async () => {
       setIsLoading(true);
       try {
-        const startDate = new Date(parseInt(selectedYear), 0, 1).toISOString();
-        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59).toISOString();
-
-        const { data, error } = await supabase
-          .from("inspection_records")
-          .select("inspection_date, status")
-          .gte("inspection_date", startDate)
-          .lte("inspection_date", endDate)
-          .order("inspection_date", { ascending: true });
-
-        if (error) throw error;
-        setRecords(data || []);
+        const { records } = await loadInspectionsForYear(parseInt(selectedYear));
+        setRecords(records);
       } catch (error) {
         console.error("Erro ao carregar relatórios:", error);
       } finally {
@@ -48,6 +38,7 @@ export const InspectionReports = () => {
 
     fetchRecords();
   }, [selectedYear]);
+
 
   const monthlyData: MonthlyData[] = useMemo(() => {
     const data: MonthlyData[] = MONTHS.map((label, i) => ({
