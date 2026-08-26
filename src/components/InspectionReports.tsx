@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { loadInspectionsForYear } from "@/lib/inspections-repo";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { CheckCircle2, Clock, TrendingUp, Calendar, Loader2 } from "lucide-react";
 

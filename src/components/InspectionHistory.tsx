@@ -260,62 +260,23 @@ export const InspectionHistory = ({
   const loadRecords = useCallback(async (page: number, search: string, dates: { from: Date; to?: Date }, pageSize: number, status: "all" | "em_andamento" | "concluido") => {
     setIsLoading(true);
     try {
-      let countQuery = supabase
-        .from("inspection_records")
-        .select("*", { count: 'exact', head: true });
-      
-      let query = supabase
-        .from("inspection_records")
-        .select("*");
-      
-      // Apply status filter
-      if (status !== "all") {
-        countQuery = countQuery.eq("status", status);
-        query = query.eq("status", status);
-      }
-      
-      if (search.trim() !== "") {
-        countQuery = countQuery.ilike("valve_code", `%${search}%`);
-        query = query.ilike("valve_code", `%${search}%`);
-      } else if (status === "all" && dates?.from) {
-        // Only apply date filter when status is "all"
-        const start = new Date(dates.from);
-        start.setHours(0, 0, 0, 0);
-        
-        if (dates.to) {
-          const end = new Date(dates.to);
-          end.setHours(23, 59, 59, 999);
-          countQuery = countQuery
-            .gte("inspection_date", start.toISOString())
-            .lte("inspection_date", end.toISOString());
-          query = query
-            .gte("inspection_date", start.toISOString())
-            .lte("inspection_date", end.toISOString());
-        } else {
-          const end = new Date(start);
-          end.setHours(23, 59, 59, 999);
-          countQuery = countQuery
-            .gte("inspection_date", start.toISOString())
-            .lte("inspection_date", end.toISOString());
-          query = query
-            .gte("inspection_date", start.toISOString())
-            .lte("inspection_date", end.toISOString());
-        }
-      }
+      const { records, total, usedLocalFallback } = await loadInspectionHistory({
+        page,
+        pageSize,
+        search,
+        status,
+        dates,
+      });
 
-      const { count, error: countError } = await countQuery;
-      if (countError) throw countError;
-      setTotalRecords(count || 0);
-      
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      
-      const { data, error } = await query
-        .order("inspection_date", { ascending: false })
-        .range(from, to);
+      setTotalRecords(total);
+      setFilteredRecords(records as InspectionRecord[]);
 
-      if (error) throw error;
-      setFilteredRecords((data || []) as InspectionRecord[]);
+      if (usedLocalFallback) {
+        toast({
+          title: "Modo local",
+          description: "O banco está indisponível. Mostrando inspeções salvas neste dispositivo.",
+        });
+      }
     } catch (error) {
       console.error("Erro ao carregar registros:", error);
       toast({
@@ -333,6 +294,13 @@ export const InspectionHistory = ({
   useEffect(() => {
     loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter);
   }, [currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter, refreshTrigger, loadRecords]);
+
+  // Reload when local emergency records change
+  useEffect(() => {
+    const handler = () => loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter);
+    window.addEventListener("local-inspections-updated", handler);
+    return () => window.removeEventListener("local-inspections-updated", handler);
+  }, [currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter, loadRecords]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -353,13 +321,7 @@ export const InspectionHistory = ({
     if (!confirm("Deseja realmente excluir este registro?")) return;
 
     try {
-      const { error } = await supabase
-        .from("inspection_records")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
+      await deleteInspection(id);
       toast({ title: "Registro excluído" });
       loadRecords(currentPage, debouncedSearchTerm, dateRange, recordsPerPage, statusFilter);
     } catch (error) {
@@ -370,6 +332,7 @@ export const InspectionHistory = ({
       });
     }
   };
+
 
   const loadImage = (url: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
