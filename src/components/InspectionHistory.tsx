@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Calendar, FileText, Trash2, Download, Search, Edit, CheckCircle2, Clock, ChevronLeft, ChevronRight, X, Filter, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { deleteInspection, loadInspectionHistory } from "@/lib/inspections-repo";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
