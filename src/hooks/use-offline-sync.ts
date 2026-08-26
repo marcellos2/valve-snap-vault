@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import {
+  deleteLocalInspectionRecord,
+  getLocalInspectionRecords,
+  markLocalInspectionStatus,
+} from "@/lib/local-inspections";
 
 interface PendingInspection {
   id: string;
