@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import {
+  deleteLocalInspectionRecord,
+  getLocalInspectionRecords,
+  markLocalInspectionStatus,
+} from "@/lib/local-inspections";
 
 interface PendingInspection {
   id: string;
@@ -29,11 +34,17 @@ export const useOfflineSync = () => {
       const inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
       // Only count pending items, not synced or syncing
       const pendingItems = inspections.filter(i => i.status === 'pending' || i.status === 'failed');
-      setPendingCount(pendingItems.length);
+      getLocalInspectionRecords()
+        .then((records) => {
+          const localPending = records.filter((r) => r.sync_status === 'pending' || r.sync_status === 'failed');
+          setPendingCount(pendingItems.length + localPending.length);
+        })
+        .catch(() => setPendingCount(pendingItems.length));
     } catch {
       setPendingCount(0);
     }
   }, []);
+
 
   const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
     if (!photoData) return null;
@@ -57,6 +68,50 @@ export const useOfflineSync = () => {
     setIsSyncing(true);
     
     try {
+      // 1) Sync emergency records stored locally while the database was unavailable
+      const localRecords = await getLocalInspectionRecords();
+      const localToSync = localRecords.filter((r) => r.sync_status === 'pending' || r.sync_status === 'failed');
+      let localSynced = 0;
+
+      for (const record of localToSync) {
+        try {
+          await markLocalInspectionStatus(record.id, 'syncing');
+          const photoInitial = record.photo_initial_url?.startsWith('data:')
+            ? await uploadPhoto(record.photo_initial_url, 'initial')
+            : record.photo_initial_url;
+          const photoDuring = record.photo_during_url?.startsWith('data:')
+            ? await uploadPhoto(record.photo_during_url, 'during')
+            : record.photo_during_url;
+          const photoFinal = record.photo_final_url?.startsWith('data:')
+            ? await uploadPhoto(record.photo_final_url, 'final')
+            : record.photo_final_url;
+
+          const { error } = await supabase.from("inspection_records").insert({
+            valve_code: record.valve_code,
+            inspection_date: record.inspection_date,
+            photo_initial_url: photoInitial,
+            photo_during_url: photoDuring,
+            photo_final_url: photoFinal,
+            notes: record.notes,
+            status: photoInitial && photoDuring && photoFinal ? 'concluido' : 'em_andamento',
+          });
+
+          if (error) throw error;
+          await deleteLocalInspectionRecord(record.id);
+          localSynced++;
+        } catch (err) {
+          console.warn("Falha ao sincronizar registro local:", err);
+          await markLocalInspectionStatus(record.id, 'failed');
+        }
+      }
+
+      if (localSynced > 0) {
+        toast({
+          title: "Registros locais enviados",
+          description: `${localSynced} inspeção(ões) salva(s) no dispositivo foram enviadas.`,
+        });
+      }
+
       const pending = localStorage.getItem(PENDING_INSPECTIONS_KEY);
       let inspections: PendingInspection[] = pending ? JSON.parse(pending) : [];
       
@@ -64,10 +119,12 @@ export const useOfflineSync = () => {
       const toSync = inspections.filter(i => i.status === 'pending' || i.status === 'failed');
       
       if (toSync.length === 0) {
+        updatePendingCount();
         syncingRef.current = false;
         setIsSyncing(false);
         return;
       }
+
 
       // Mark items as syncing to prevent duplicate syncs
       inspections = inspections.map(i => 

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
+import { saveInspection } from "@/lib/inspections-repo";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
@@ -178,138 +179,60 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
     setIsSaving(true);
 
-    // If offline and not editing, save locally
-    if (!isOnline && !editingRecord) {
-      const saved = savePendingInspection({
-        valveCode,
-        photoInitial,
-        photoDuring,
-        photoFinal,
-      });
-
-      if (saved) {
-        setValveCode("");
-        setPhotoInitial(null);
-        setPhotoDuring(null);
-        setPhotoFinal(null);
-        setRotations({ initial: 0, during: 0, final: 0 });
-        onSaved();
-      }
-      
-      setIsSaving(false);
-      return;
-    }
-
-    let photoInitialUrl = editingRecord?.photo_initial_url || null;
-    let photoDuringUrl = editingRecord?.photo_during_url || null;
-    let photoFinalUrl = editingRecord?.photo_final_url || null;
-
-    try {
-
-      if (photoInitial && photoInitial.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoInitial, "initial");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto inicial");
-        photoInitialUrl = uploadedUrl;
-      } else if (photoInitial) {
-        photoInitialUrl = photoInitial;
-      }
-      
-      if (photoDuring && photoDuring.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoDuring, "during");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto durante");
-        photoDuringUrl = uploadedUrl;
-      } else if (photoDuring) {
-        photoDuringUrl = photoDuring;
-      }
-      
-      if (photoFinal && photoFinal.startsWith('data:')) {
-        const uploadedUrl = await uploadPhoto(photoFinal, "final");
-        if (!uploadedUrl) throw new Error("Falha ao enviar foto final");
-        photoFinalUrl = uploadedUrl;
-      } else if (photoFinal) {
-        photoFinalUrl = photoFinal;
-      }
-
-      const hasAllPhotos = photoInitialUrl && photoDuringUrl && photoFinalUrl;
-      const status = hasAllPhotos ? 'concluido' : 'em_andamento';
-
-      let error;
-      
-      if (editingRecord) {
-        const result = await supabase
-          .from("inspection_records")
-          .update({
-            valve_code: valveCode || null,
-            photo_initial_url: photoInitialUrl,
-            photo_during_url: photoDuringUrl,
-            photo_final_url: photoFinalUrl,
-            status: status,
-          })
-          .eq("id", editingRecord.id);
-        
-        error = result.error;
-      } else {
-        const result = await supabase.from("inspection_records").insert({
-          valve_code: valveCode || null,
-          photo_initial_url: photoInitialUrl,
-          photo_during_url: photoDuringUrl,
-          photo_final_url: photoFinalUrl,
-          notes: null,
-          status: status,
-        });
-        
-        error = result.error;
-      }
-
-      if (error) {
-        console.error("Database insert error:", error);
-        throw error;
-      }
-
-      const allPhotosPresent = (photoInitialUrl || editingRecord?.photo_initial_url) && 
-                               (photoDuringUrl || editingRecord?.photo_during_url) && 
-                               (photoFinalUrl || editingRecord?.photo_final_url);
-
-      toast({
-        title: "Sucesso!",
-        description: allPhotosPresent 
-          ? "Inspeção concluída com sucesso" 
-          : "Inspeção salva. Você pode adicionar as fotos restantes depois",
-      });
-
+    const resetForm = () => {
       setValveCode("");
       setPhotoInitial(null);
       setPhotoDuring(null);
       setPhotoFinal(null);
       setRotations({ initial: 0, during: 0, final: 0 });
-      
-      if (onCancelEdit) {
-        onCancelEdit();
+    };
+
+    // Try to upload each photo; if the upload fails, keep the local image data
+    // so the inspection can still be stored locally and synced later.
+    const resolvePhoto = async (photo: string | null, name: string) => {
+      if (!photo) return null;
+      if (!photo.startsWith("data:")) return photo;
+      if (!isOnline) return photo;
+      try {
+        const url = await uploadPhoto(photo, name);
+        return url || photo;
+      } catch (err) {
+        console.warn(`Upload de ${name} falhou, mantendo foto local:`, err);
+        return photo;
       }
-      
+    };
+
+    try {
+      const photoInitialUrl = await resolvePhoto(photoInitial, "initial");
+      const photoDuringUrl = await resolvePhoto(photoDuring, "during");
+      const photoFinalUrl = await resolvePhoto(photoFinal, "final");
+
+      const { savedLocally } = await saveInspection(
+        {
+          valveCode,
+          photoInitial: photoInitialUrl,
+          photoDuring: photoDuringUrl,
+          photoFinal: photoFinalUrl,
+        },
+        editingRecord?.id
+      );
+
+      const allPhotosPresent = photoInitialUrl && photoDuringUrl && photoFinalUrl;
+
+      toast({
+        title: savedLocally ? "Salvo neste dispositivo" : "Sucesso!",
+        description: savedLocally
+          ? "O banco está indisponível. A inspeção ficou salva aqui e será enviada quando voltar."
+          : allPhotosPresent
+            ? "Inspeção concluída com sucesso"
+            : "Inspeção salva. Você pode adicionar as fotos restantes depois",
+      });
+
+      resetForm();
+      onCancelEdit?.();
       onSaved();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-
-      if (!editingRecord) {
-        const savedLocally = savePendingInspection({
-          valveCode,
-          photoInitial: photoInitialUrl ?? photoInitial,
-          photoDuring: photoDuringUrl ?? photoDuring,
-          photoFinal: photoFinalUrl ?? photoFinal,
-        });
-
-        if (savedLocally) {
-          setValveCode("");
-          setPhotoInitial(null);
-          setPhotoDuring(null);
-          setPhotoFinal(null);
-          setRotations({ initial: 0, during: 0, final: 0 });
-          onSaved();
-          return;
-        }
-      }
-
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Falha ao salvar inspeção",
@@ -319,6 +242,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       setIsSaving(false);
     }
   };
+
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
