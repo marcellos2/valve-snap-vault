@@ -212,10 +212,18 @@ export const uploadPhotoWithRetry = async (
       if (error) throw error;
 
       const { data } = supabase.storage.from("valve-photos").getPublicUrl(filePath);
+      markBackendUp();
       return data.publicUrl;
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
       lastError = err;
+
+      // Network-level failure means the backend is unreachable: stop retrying.
+      if (isNetworkFailure(err)) {
+        markBackendDown();
+        console.warn(`Backend inacessível ao enviar ${fileName}, foto mantida localmente.`);
+        return null;
+      }
 
       try {
         const smallerBlob = await compressImage(
