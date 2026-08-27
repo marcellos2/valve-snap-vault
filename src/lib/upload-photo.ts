@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getGoogleDriveSessionStatus, hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
+import { isBackendDown, isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
 
 /**
  * Compress a base64 image to reduce upload size on slow networks (4G/cellular).
