@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getGoogleDriveSessionStatus, hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
+import { isBackendDown, isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
 
 /**
  * Compress a base64 image to reduce upload size on slow networks (4G/cellular).
@@ -172,6 +173,13 @@ export const uploadPhotoWithRetry = async (
     }
   }
 
+  // Backend recently unreachable (paused project / no network): don't waste
+  // time on long retry loops, keep the photo locally instead.
+  if (isBackendDown()) {
+    console.warn(`Backend indisponível, mantendo ${fileName} localmente.`);
+    return null;
+  }
+
   let lastError: unknown = null;
   const filePath = createUploadPath(fileName);
 
@@ -204,10 +212,18 @@ export const uploadPhotoWithRetry = async (
       if (error) throw error;
 
       const { data } = supabase.storage.from("valve-photos").getPublicUrl(filePath);
+      markBackendUp();
       return data.publicUrl;
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
       lastError = err;
+
+      // Network-level failure means the backend is unreachable: stop retrying.
+      if (isNetworkFailure(err)) {
+        markBackendDown();
+        console.warn(`Backend inacessível ao enviar ${fileName}, foto mantida localmente.`);
+        return null;
+      }
 
       try {
         const smallerBlob = await compressImage(

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isBackendDown, isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
 import {
   createLocalInspectionRecord,
   deleteLocalInspectionRecord,
@@ -64,6 +65,15 @@ export const loadInspectionHistory = async (filters: HistoryFilters): Promise<Hi
   const localAll = await getLocalInspectionRecords();
   const local = filterLocal(localAll, filters);
 
+  if (isBackendDown()) {
+    const start = (filters.page - 1) * filters.pageSize;
+    return {
+      records: local.slice(start, start + filters.pageSize),
+      total: local.length,
+      usedLocalFallback: true,
+    };
+  }
+
   try {
     let countQuery = supabase.from("inspection_records").select("*", { count: "exact", head: true });
     let query = supabase.from("inspection_records").select("*");
@@ -107,6 +117,7 @@ export const loadInspectionHistory = async (filters: HistoryFilters): Promise<Hi
       usedLocalFallback: false,
     };
   } catch (error) {
+    if (isNetworkFailure(error)) markBackendDown();
     console.warn("Banco indisponível, usando registros locais:", error);
     const start = (filters.page - 1) * filters.pageSize;
     return {
@@ -126,6 +137,11 @@ export const saveInspection = async (
 
   if (editingId && isLocalInspectionId(editingId)) {
     await updateLocalInspectionRecord(editingId, input);
+    return { savedLocally: true };
+  }
+
+  if (isBackendDown() && !editingId) {
+    await saveLocalInspectionRecord(createLocalInspectionRecord(input));
     return { savedLocally: true };
   }
 
@@ -153,8 +169,10 @@ export const saveInspection = async (
       });
       if (error) throw error;
     }
+    markBackendUp();
     return { savedLocally: false };
   } catch (error) {
+    if (isNetworkFailure(error)) markBackendDown();
     console.warn("Banco indisponível, salvando inspeção localmente:", error);
     if (editingId) throw error;
     await saveLocalInspectionRecord(createLocalInspectionRecord(input));
@@ -181,6 +199,10 @@ export const loadInspectionsForYear = async (year: number) => {
     return time >= startDate.getTime() && time <= endDate.getTime();
   });
 
+  if (isBackendDown()) {
+    return { records: local, usedLocalFallback: true };
+  }
+
   try {
     const { data, error } = await supabase
       .from("inspection_records")
@@ -189,8 +211,10 @@ export const loadInspectionsForYear = async (year: number) => {
       .lte("inspection_date", endDate.toISOString())
       .order("inspection_date", { ascending: true });
     if (error) throw error;
+    markBackendUp();
     return { records: [...(data || []), ...local], usedLocalFallback: false };
   } catch (error) {
+    if (isNetworkFailure(error)) markBackendDown();
     console.warn("Banco indisponível, relatórios usando dados locais:", error);
     return { records: local, usedLocalFallback: true };
   }
