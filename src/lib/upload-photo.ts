@@ -173,6 +173,13 @@ export const uploadPhotoWithRetry = async (
     }
   }
 
+  // Backend recently unreachable (paused project / no network): don't waste
+  // time on long retry loops, keep the photo locally instead.
+  if (isBackendDown()) {
+    console.warn(`Backend indisponível, mantendo ${fileName} localmente.`);
+    return null;
+  }
+
   let lastError: unknown = null;
   const filePath = createUploadPath(fileName);
 
