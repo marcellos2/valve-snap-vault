@@ -201,24 +201,9 @@ const RecordCard = ({
         </div>
       </div>
 
-      {/* Photos Preview */}
-      <div className="grid grid-cols-3 gap-0.5 bg-border">
-        {photos.map((url, i) => (
-          <div key={i} className="aspect-square bg-muted">
-            {url ? (
-              <LazyImage 
-                src={url} 
-                alt={`Foto ${i + 1}`} 
-                className="w-full h-full"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                <div className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/30" />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* Registros fotográficos (folha completa arrastável) */}
+      <CompositeSheet record={record} />
+
 
       {/* Actions */}
       <div className="flex items-center gap-1 p-2 bg-muted/30">
