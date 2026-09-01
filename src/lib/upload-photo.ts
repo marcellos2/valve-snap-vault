@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/external-supabase/client";
 import { getGoogleDriveSessionStatus, hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
 import { isBackendDown, isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
 

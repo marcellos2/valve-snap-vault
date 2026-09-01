@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
+import {
+  EXTERNAL_SUPABASE_PUBLISHABLE_KEY,
+  EXTERNAL_SUPABASE_URL,
+} from "@/integrations/external-supabase/config";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const SUPABASE_URL = EXTERNAL_SUPABASE_URL;
+const ANON_KEY = EXTERNAL_SUPABASE_PUBLISHABLE_KEY;
 const STORAGE_KEY = "google_photos_session_v1";
 
 type GooglePhotosState = {

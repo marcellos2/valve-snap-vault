@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/external-supabase/client";
+import {
+  EXTERNAL_SUPABASE_PUBLISHABLE_KEY,
+  EXTERNAL_SUPABASE_URL,
+} from "@/integrations/external-supabase/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -134,10 +138,10 @@ const Diagnostico = () => {
     // 4. Storage
     setResults((r) => ({ ...r, storage: { status: "running" } }));
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/bucket`;
+      const url = `${EXTERNAL_SUPABASE_URL}/storage/v1/bucket`;
       const res = await fetch(url, {
         headers: {
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: EXTERNAL_SUPABASE_PUBLISHABLE_KEY,
         },
       });
       if (!res.ok && res.status !== 401 && res.status !== 403) {
