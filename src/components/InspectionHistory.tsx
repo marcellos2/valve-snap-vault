@@ -86,6 +86,77 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
   );
 };
 
+// Composite sheet: the 3 photos + titles rendered as ONE draggable image
+const CompositeSheet = ({ record }: { record: InspectionRecord }) => {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        enqueueComposite(() => buildInspectionComposite(record))
+          .then((blob) => {
+            if (cancelled) return;
+            objectUrl = URL.createObjectURL(blob);
+            setUrl(objectUrl);
+          })
+          .catch(() => !cancelled && setFailed(true));
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(containerRef.current);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [record]);
+
+  const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
+    if (!url) return;
+    const name = compositeFilename(record);
+    e.dataTransfer.effectAllowed = "copy";
+    try {
+      e.dataTransfer.setData("DownloadURL", `image/png:${name}:${url}`);
+    } catch {
+      /* navegador sem suporte */
+    }
+    e.dataTransfer.setData("text/uri-list", url);
+    e.dataTransfer.setData("text/plain", name);
+  };
+
+  return (
+    <div ref={containerRef} className="bg-muted/40 p-2">
+      {url ? (
+        <img
+          src={url}
+          alt={`Registros fotográficos da inspeção ${record.valve_code || "sem código"}`}
+          draggable
+          onDragStart={handleDragStart}
+          className="w-full rounded-lg border border-border bg-white cursor-grab active:cursor-grabbing select-none"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div className="w-full aspect-[2000/752] rounded-lg border border-border bg-muted flex items-center justify-center text-xs text-muted-foreground">
+          {failed ? "Falha ao montar registros" : "Montando registros fotográficos..."}
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-muted-foreground text-center">
+        Arraste a folha completa (3 fotos) para onde quiser
+      </p>
+    </div>
+  );
+};
+
 // Record card component for better performance
 const RecordCard = ({ 
   record, 
@@ -98,11 +169,7 @@ const RecordCard = ({
   onDownload: (record: InspectionRecord) => void;
   onDelete: (id: string) => void;
 }) => {
-  const photos = useMemo(() => [
-    record.photo_initial_url,
-    record.photo_during_url,
-    record.photo_final_url
-  ], [record.photo_initial_url, record.photo_during_url, record.photo_final_url]);
+
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 group">
