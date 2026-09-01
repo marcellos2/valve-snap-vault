@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buildInspectionComposite, compositeFilename, enqueueComposite } from "@/lib/inspection-composite";
+
 
 interface InspectionRecord {
   id: string;
