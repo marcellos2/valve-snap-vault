@@ -6,9 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, LogIn, LogOut, Download, Image as ImageIcon, MousePointerClick, ExternalLink } from "lucide-react";
 import { getGoogleDriveSessionStatus } from "@/lib/upload-to-drive";
+import {
+  EXTERNAL_SUPABASE_PUBLISHABLE_KEY,
+  EXTERNAL_SUPABASE_URL,
+} from "@/integrations/external-supabase/config";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const SUPABASE_URL = EXTERNAL_SUPABASE_URL;
+const ANON_KEY = EXTERNAL_SUPABASE_PUBLISHABLE_KEY;
 const STORAGE_KEY = "google_photos_session_v1";
 const GOOGLE_PHOTOS_AUTH_ORIGIN = new URL(SUPABASE_URL).origin;
 

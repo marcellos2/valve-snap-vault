@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/external-supabase/client";
 import { isBackendDown, isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
 import {
   createLocalInspectionRecord,
