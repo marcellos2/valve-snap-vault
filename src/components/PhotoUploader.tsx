@@ -194,7 +194,7 @@ export const PhotoUploader = ({
                 <p className={`text-sm font-medium transition-colors ${
                   isDragging ? 'text-primary' : 'text-muted-foreground'
                 }`}>
-                  {isDragging ? 'Solte a imagem aqui' : 'Arraste, clique ou Ctrl+V'}
+                  {isDragging ? 'Solte a imagem aqui' : (loadingDrive ? 'Buscando foto no Drive...' : 'Arraste, clique ou Ctrl+V')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   JPG, PNG ou WEBP
@@ -228,7 +228,7 @@ export const PhotoUploader = ({
               className="flex-1 hover:bg-muted transition-colors"
             >
               <ClipboardPaste className="h-4 w-4 mr-1.5" />
-              Colar
+              {loadingDrive ? "Buscando..." : "Colar"}
             </Button>
           </div>
 
