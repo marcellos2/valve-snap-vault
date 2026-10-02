@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, RotateCw, X } from "lucide-react";
+import { Camera, Upload, RotateCw, X, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
@@ -76,9 +76,45 @@ export const PhotoUploader = ({
     }
   };
 
+  const readBlob = (blob: Blob) => {
+    const reader = new FileReader();
+    reader.onloadend = () => onPhotoChange(reader.result as string);
+    reader.readAsDataURL(blob);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const img = items.find((i) => i.type.startsWith("image/"));
+    const file = img?.getAsFile();
+    if (file) {
+      e.preventDefault();
+      readBlob(file);
+    }
+  };
+
+  const handlePasteButton = async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) {
+          readBlob(await item.getType(type));
+          return;
+        }
+      }
+      alert("Nenhuma imagem copiada. Copie a foto (Ctrl+C) e tente novamente.");
+    } catch {
+      alert("Clique no quadro da foto e pressione Ctrl+V para colar.");
+    }
+  };
+
   return (
     <>
-      <Card className="overflow-hidden border border-border hover:border-primary/40 hover:shadow-lg transition-all duration-300 group">
+      <Card
+        tabIndex={0}
+        onPaste={handlePaste}
+        className="overflow-hidden border border-border hover:border-primary/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 group"
+      >
         {/* Header do card */}
         <div className="bg-primary px-4 py-3">
           <h3 className="font-semibold text-sm text-primary-foreground">{title}</h3>
@@ -136,7 +172,7 @@ export const PhotoUploader = ({
                 <p className={`text-sm font-medium transition-colors ${
                   isDragging ? 'text-primary' : 'text-muted-foreground'
                 }`}>
-                  {isDragging ? 'Solte a imagem aqui' : 'Arraste ou clique'}
+                  {isDragging ? 'Solte a imagem aqui' : 'Arraste, clique ou Ctrl+V'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   JPG, PNG ou WEBP
@@ -162,6 +198,15 @@ export const PhotoUploader = ({
             >
               <Upload className="h-4 w-4 mr-1.5" />
               Arquivo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePasteButton}
+              className="flex-1 hover:bg-muted transition-colors"
+            >
+              <ClipboardPaste className="h-4 w-4 mr-1.5" />
+              Colar
             </Button>
           </div>
 
