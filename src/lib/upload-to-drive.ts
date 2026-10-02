@@ -190,3 +190,58 @@ export async function uploadBlobToDrive(
 
   return `https://lh3.googleusercontent.com/d/${fileId}=w2000`;
 }
+/** Extrai ID de arquivo de um link do Google Drive. */
+export function extractDriveFileId(text: string): string | null {
+  const t = text.trim();
+  const m =
+    t.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/) ||
+    t.match(/[?&]id=([a-zA-Z0-9_-]{10,})/) ||
+    t.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Busca a imagem no Drive a partir de um link (ou nome de arquivo) copiado.
+ * Usa a conta Google conectada no app.
+ */
+export async function fetchDriveImageFromText(text: string): Promise<Blob> {
+  const raw = readStoredSession();
+  if (!raw) throw new Error("Conecte sua conta Google (menu Google Photos/Drive) para colar fotos do Drive.");
+  const s = JSON.parse(raw) as GoogleSession;
+  if (!s.access_token || (s.expires_at && s.expires_at < Date.now())) {
+    throw new Error("Login do Google expirou. Reconecte a conta Google e tente novamente.");
+  }
+  const headers = { Authorization: `Bearer ${s.access_token}` };
+  let fileId = extractDriveFileId(text);
+
+  if (!fileId) {
+    // Pode ter vindo só o nome do arquivo (ex.: IMG_20260830_085948.jpg)
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const name = lines.find((l) => /\.(jpe?g|png|heic|webp|gif)$/i.test(l)) || lines[0];
+    if (!name || name.length > 200) throw new Error("Não reconheci um link ou nome de foto do Drive.");
+    const q = `name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and trashed = false`;
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+      { headers },
+    );
+    if (!r.ok) throw new Error(`Erro ao buscar no Drive (${r.status}).`);
+    const data = await r.json();
+    fileId = data.files?.[0]?.id ?? null;
+    if (!fileId) throw new Error(`Foto "${name}" não encontrada no Drive.`);
+  }
+
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`,
+    { headers },
+  );
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Login do Google expirou. Reconecte a conta Google.");
+    if (res.status === 403 || res.status === 404) throw new Error("Sem acesso a essa foto com a conta conectada.");
+    throw new Error(`Erro ao baixar do Drive (${res.status}).`);
+  }
+  const blob = await res.blob();
+  if (!blob.type.startsWith("image/") && blob.type !== "application/octet-stream") {
+    throw new Error("O arquivo copiado não é uma imagem.");
+  }
+  return blob;
+}
