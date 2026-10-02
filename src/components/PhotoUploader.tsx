@@ -3,6 +3,7 @@ import { Camera, Upload, RotateCw, X, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
+import { fetchDriveImageFromText } from "@/lib/upload-to-drive";
 
 interface PhotoUploaderProps {
   title: string;
@@ -82,6 +83,19 @@ export const PhotoUploader = ({
     reader.readAsDataURL(blob);
   };
 
+  const [loadingDrive, setLoadingDrive] = useState(false);
+
+  const loadFromDriveText = async (text: string) => {
+    setLoadingDrive(true);
+    try {
+      readBlob(await fetchDriveImageFromText(text));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Falha ao buscar foto do Drive.");
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = Array.from(e.clipboardData?.items ?? []);
     const img = items.find((i) => i.type.startsWith("image/"));
@@ -89,6 +103,12 @@ export const PhotoUploader = ({
     if (file) {
       e.preventDefault();
       readBlob(file);
+      return;
+    }
+    const text = e.clipboardData?.getData("text/plain") || e.clipboardData?.getData("text/uri-list");
+    if (text) {
+      e.preventDefault();
+      loadFromDriveText(text);
     }
   };
 
@@ -102,6 +122,8 @@ export const PhotoUploader = ({
           return;
         }
       }
+      const text = await navigator.clipboard.readText().catch(() => "");
+      if (text) return loadFromDriveText(text);
       alert("Nenhuma imagem copiada. Copie a foto (Ctrl+C) e tente novamente.");
     } catch {
       alert("Clique no quadro da foto e pressione Ctrl+V para colar.");
@@ -172,7 +194,7 @@ export const PhotoUploader = ({
                 <p className={`text-sm font-medium transition-colors ${
                   isDragging ? 'text-primary' : 'text-muted-foreground'
                 }`}>
-                  {isDragging ? 'Solte a imagem aqui' : 'Arraste, clique ou Ctrl+V'}
+                  {isDragging ? 'Solte a imagem aqui' : (loadingDrive ? 'Buscando foto no Drive...' : 'Arraste, clique ou Ctrl+V')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   JPG, PNG ou WEBP
@@ -206,7 +228,7 @@ export const PhotoUploader = ({
               className="flex-1 hover:bg-muted transition-colors"
             >
               <ClipboardPaste className="h-4 w-4 mr-1.5" />
-              Colar
+              {loadingDrive ? "Buscando..." : "Colar"}
             </Button>
           </div>
 
