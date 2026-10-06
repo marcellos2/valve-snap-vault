@@ -244,7 +244,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         photoFinalUrl = await resolvePhoto(photoFinal, "final");
       }
 
-      const { savedLocally } = await saveInspection(
+      await saveInspection(
         {
           valveCode,
           photoInitial: photoInitialUrl,
@@ -257,12 +257,10 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       const allPhotosPresent = photoInitialUrl && photoDuringUrl && photoFinalUrl;
 
       toast({
-        title: savedLocally ? "Salvo neste dispositivo" : "Sucesso!",
-        description: savedLocally
-          ? "O banco está indisponível. A inspeção ficou salva aqui e será enviada quando voltar."
-          : allPhotosPresent
-            ? "Inspeção concluída com sucesso"
-            : "Inspeção salva. Você pode adicionar as fotos restantes depois",
+        title: "Sucesso!",
+        description: allPhotosPresent
+          ? "Inspeção concluída com sucesso"
+          : "Inspeção salva. Você pode adicionar as fotos restantes depois",
       });
 
       resetForm();
