@@ -323,7 +323,7 @@ export const InspectionHistory = ({
   const loadRecords = useCallback(async (page: number, search: string, dates: { from: Date; to?: Date }, pageSize: number, status: "all" | "em_andamento" | "concluido") => {
     setIsLoading(true);
     try {
-      const { records, total, usedLocalFallback } = await loadInspectionHistory({
+      const { records, total } = await loadInspectionHistory({
         page,
         pageSize,
         search,
@@ -333,13 +333,6 @@ export const InspectionHistory = ({
 
       setTotalRecords(total);
       setFilteredRecords(records as InspectionRecord[]);
-
-      if (usedLocalFallback) {
-        toast({
-          title: "Modo local",
-          description: "O banco está indisponível. Mostrando inspeções salvas neste dispositivo.",
-        });
-      }
     } catch (error) {
       console.error("Erro ao carregar registros:", error);
       toast({
