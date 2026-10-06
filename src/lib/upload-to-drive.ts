@@ -1,3 +1,4 @@
+import { refreshGoogleSessionIfNeeded } from "./google-session-refresh";
 const STORAGE_KEY = "google_photos_session_v1";
 const FOLDER_NAME = "Inspeções Válvulas";
 const TARGET_FOLDER_ID = "1sF5lBToqmm5K2ehXvkPfvXUYv9QrsDii";
@@ -209,6 +210,7 @@ export function extractDriveFileId(text: string): string | null {
  * Usa a conta Google conectada no app.
  */
 export async function fetchDriveImageFromText(text: string): Promise<Blob> {
+  await refreshGoogleSessionIfNeeded();
   const raw = readStoredSession();
   if (!raw) throw new Error("Conecte sua conta Google (menu Google Photos/Drive) para colar fotos do Drive.");
   const s = JSON.parse(raw) as GoogleSession;
