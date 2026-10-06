@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
 import { saveInspection } from "@/lib/inspections-repo";
+import { hasGoogleDriveSession, uploadBlobToDrive, COMPOSITE_FOLDER_ID } from "@/lib/upload-to-drive";
+import { buildInspectionComposite, compositeFilename } from "@/lib/inspection-composite";
 import Tesseract from "tesseract.js";
 
 interface InspectionFormProps {
@@ -203,9 +205,42 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     };
 
     try {
-      const photoInitialUrl = await resolvePhoto(photoInitial, "initial");
-      const photoDuringUrl = await resolvePhoto(photoDuring, "during");
-      const photoFinalUrl = await resolvePhoto(photoFinal, "final");
+      let photoInitialUrl: string | null = null;
+      let photoDuringUrl: string | null = null;
+      let photoFinalUrl: string | null = null;
+
+      // Preferência: montar a folha final (3 fotos em uma) e salvar no Drive (pasta fotosval).
+      let savedComposite = false;
+      if (isOnline && hasGoogleDriveSession()) {
+        try {
+          const record = {
+            valve_code: valveCode,
+            inspection_date: new Date().toISOString(),
+            photo_initial_url: photoInitial,
+            photo_during_url: photoDuring,
+            photo_final_url: photoFinal,
+          };
+          const blob = await buildInspectionComposite(record);
+          const url = await uploadBlobToDrive(blob, compositeFilename(record), COMPOSITE_FOLDER_ID);
+          if (url) {
+            photoInitialUrl = photoDuringUrl = photoFinalUrl = url;
+            savedComposite = true;
+          }
+        } catch (err) {
+          console.warn("Falha ao enviar folha ao Drive:", err);
+          toast({
+            title: "Drive indisponível",
+            description: err instanceof Error ? err.message : "Salvando as fotos pelo método antigo.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      if (!savedComposite) {
+        photoInitialUrl = await resolvePhoto(photoInitial, "initial");
+        photoDuringUrl = await resolvePhoto(photoDuring, "during");
+        photoFinalUrl = await resolvePhoto(photoFinal, "final");
+      }
 
       const { savedLocally } = await saveInspection(
         {

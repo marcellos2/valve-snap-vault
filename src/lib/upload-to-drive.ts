@@ -131,15 +131,19 @@ async function ensureFolder(token: string): Promise<string> {
   return cachedFolderId;
 }
 
+/** Pasta "fotosval" onde ficam as folhas finais (3 fotos em uma). */
+export const COMPOSITE_FOLDER_ID = "1NfGlaHkQxqGSv4VhImPXksYiYtJa6BUy";
+
 export async function uploadBlobToDrive(
   blob: Blob,
-  filename: string
+  filename: string,
+  folderOverride?: string
 ): Promise<string | null> {
   const session = getSession();
   if (!session) return null;
   const token = session.access_token;
 
-  const folderId = await ensureFolder(token);
+  const folderId = folderOverride || (await ensureFolder(token));
 
   const metadata = { name: filename, parents: [folderId] };
   const boundary = "lovable_" + Date.now() + "_" + Math.random().toString(36).slice(2);
