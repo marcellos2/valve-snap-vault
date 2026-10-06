@@ -11,6 +11,7 @@ import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
 import { saveInspection } from "@/lib/inspections-repo";
 import { hasGoogleDriveSession, uploadBlobToDrive, COMPOSITE_FOLDER_ID } from "@/lib/upload-to-drive";
+import { refreshGoogleSessionIfNeeded } from "@/lib/google-session-refresh";
 import { buildInspectionComposite, compositeFilename } from "@/lib/inspection-composite";
 import Tesseract from "tesseract.js";
 
@@ -211,6 +212,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
 
       // Preferência: montar a folha final (3 fotos em uma) e salvar no Drive (pasta fotosval).
       let savedComposite = false;
+      if (isOnline) await refreshGoogleSessionIfNeeded();
       if (isOnline && hasGoogleDriveSession()) {
         try {
           const record = {

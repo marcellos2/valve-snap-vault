@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { refreshGoogleSessionIfNeeded } from "@/lib/google-session-refresh";
 import {
   FUNCTIONS_SUPABASE_PUBLISHABLE_KEY,
   FUNCTIONS_SUPABASE_URL,
@@ -45,6 +46,20 @@ async function exchangeGooglePhotosCode(search: URLSearchParams) {
 }
 
 export function GooglePhotosOAuthHandler() {
+  // Login permanente: renova o token ao abrir, ao voltar para o app e a cada 5 min.
+  useEffect(() => {
+    void refreshGoogleSessionIfNeeded();
+    const id = setInterval(() => void refreshGoogleSessionIfNeeded(), 5 * 60 * 1000);
+    const onVis = () => document.visibilityState === "visible" && void refreshGoogleSessionIfNeeded();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("online", onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("online", onVis);
+    };
+  }, []);
+
   useEffect(() => {
     const search = new URLSearchParams(window.location.search);
     const state = decodeState(search.get("state"));
