@@ -95,6 +95,15 @@ const CompositeSheet = ({ record }: { record: InspectionRecord }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Folha já pronta salva no Drive: as 3 URLs apontam para a mesma imagem.
+    if (
+      record.photo_initial_url &&
+      record.photo_initial_url === record.photo_during_url &&
+      record.photo_initial_url === record.photo_final_url
+    ) {
+      setUrl(record.photo_initial_url);
+      return;
+    }
     if (!containerRef.current) return;
     let cancelled = false;
     let objectUrl: string | null = null;
