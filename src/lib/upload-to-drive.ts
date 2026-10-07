@@ -251,3 +251,72 @@ export async function fetchDriveImageFromText(text: string): Promise<Blob> {
   }
   return blob;
 }
+
+export interface DriveInspectionRecord {
+  id: string;
+  valve_code: string | null;
+  inspection_date: string;
+  photo_initial_url: string;
+  photo_during_url: string;
+  photo_final_url: string;
+  notes: string | null;
+  status: "concluido";
+}
+
+let driveCache: { at: number; records: DriveInspectionRecord[] } | null = null;
+
+/** Lista as folhas salvas na pasta fotosval e converte em registros do histórico. */
+export async function listDriveInspections(force = false): Promise<DriveInspectionRecord[]> {
+  if (!force && driveCache && Date.now() - driveCache.at < 60_000) return driveCache.records;
+  await refreshGoogleSessionIfNeeded();
+  const raw = readStoredSession();
+  if (!raw) return [];
+  const s = JSON.parse(raw) as GoogleSession;
+  if (!s.access_token) return [];
+  const headers = { Authorization: `Bearer ${s.access_token}` };
+  const q = `'${COMPOSITE_FOLDER_ID}' in parents and trashed = false and mimeType contains 'image/'`;
+  const out: DriveInspectionRecord[] = [];
+  let pageToken = "";
+  for (let i = 0; i < 20; i++) {
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,createdTime)&orderBy=createdTime desc&pageSize=1000&supportsAllDrives=true&includeItemsFromAllDrives=true${pageToken ? `&pageToken=${pageToken}` : ""}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      if (res.status === 401) await refreshGoogleSessionIfNeeded(true);
+      break;
+    }
+    const data = await res.json();
+    for (const f of data.files || []) {
+      const m = String(f.name).match(/^inspecao-(.+)-(\d{2})-(\d{2})-(\d{4})\.\w+$/i);
+      const code = m ? m[1] : String(f.name).replace(/\.\w+$/, "");
+      const img = `https://lh3.googleusercontent.com/d/${f.id}=w2000`;
+      out.push({
+        id: `drive-${f.id}`,
+        valve_code: code === "sem-codigo" ? null : code,
+        inspection_date: f.createdTime,
+        photo_initial_url: img,
+        photo_during_url: img,
+        photo_final_url: img,
+        notes: null,
+        status: "concluido",
+      });
+    }
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+  driveCache = { at: Date.now(), records: out };
+  return out;
+}
+
+export async function trashDriveFile(fileId: string): Promise<void> {
+  await refreshGoogleSessionIfNeeded();
+  const raw = readStoredSession();
+  if (!raw) throw new Error("Conecte a conta Google para excluir.");
+  const s = JSON.parse(raw) as GoogleSession;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${s.access_token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ trashed: true }),
+  });
+  if (!res.ok) throw new Error(`Erro ao excluir no Drive (${res.status}).`);
+  driveCache = null;
+}
