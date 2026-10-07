@@ -10,6 +10,7 @@ import {
   type LocalInspectionRecord,
   type PendingInspectionInput,
 } from "./local-inspections";
+import { listDriveInspections, trashDriveFile } from "./upload-to-drive";
 
 export interface InspectionRecordLike {
   id: string;
@@ -63,16 +64,36 @@ const filterLocal = (records: LocalInspectionRecord[], filters: HistoryFilters) 
 /** Load history from the hosted database, falling back to local emergency records. */
 export const loadInspectionHistory = async (filters: HistoryFilters): Promise<HistoryResult> => {
   const localAll = await getLocalInspectionRecords();
-  const local = filterLocal(localAll, filters);
+  const driveAll = await listDriveInspections().catch((e) => {
+    console.warn("Falha ao ler o Drive:", e);
+    return [];
+  });
 
-  if (isBackendDown()) {
-    const start = (filters.page - 1) * filters.pageSize;
-    return {
-      records: local.slice(start, start + filters.pageSize),
-      total: local.length,
-      usedLocalFallback: true,
-    };
+  let driveUrlsInDb = new Set<string>();
+  let remoteOk = !isBackendDown();
+  if (remoteOk && driveAll.length) {
+    try {
+      const { data, error } = await supabase
+        .from("inspection_records")
+        .select("photo_final_url")
+        .like("photo_final_url", "https://lh3.googleusercontent.com/d/%");
+      if (error) throw error;
+      driveUrlsInDb = new Set((data || []).map((r: { photo_final_url: string | null }) => r.photo_final_url || ""));
+    } catch (error) {
+      if (isNetworkFailure(error)) markBackendDown();
+      remoteOk = false;
+    }
   }
+
+  const driveOnly = driveAll.filter((r) => !driveUrlsInDb.has(r.photo_final_url));
+  const extras = filterLocal([...localAll, ...(driveOnly as unknown as LocalInspectionRecord[])], filters)
+    .sort((a, b) => new Date(b.inspection_date).getTime() - new Date(a.inspection_date).getTime());
+
+  const start = (filters.page - 1) * filters.pageSize;
+  const extrasPage = extras.slice(start, start + filters.pageSize);
+  const localResult = (): HistoryResult => ({ records: extrasPage, total: extras.length, usedLocalFallback: true });
+
+  if (!remoteOk) return localResult();
 
   try {
     let countQuery = supabase.from("inspection_records").select("*", { count: "exact", head: true });
@@ -101,30 +122,27 @@ export const loadInspectionHistory = async (filters: HistoryFilters): Promise<Hi
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
 
-    const from = (filters.page - 1) * filters.pageSize;
-    const to = from + filters.pageSize - 1;
-    const { data, error } = await query
-      .order("inspection_date", { ascending: false })
-      .range(from, to);
-    if (error) throw error;
-
-    const remote = (data || []) as InspectionRecordLike[];
-    const merged = filters.page === 1 ? [...local, ...remote] : remote;
+    const remaining = filters.pageSize - extrasPage.length;
+    let remote: InspectionRecordLike[] = [];
+    if (remaining > 0) {
+      const from = Math.max(0, start - extras.length);
+      const { data, error } = await query
+        .order("inspection_date", { ascending: false })
+        .range(from, from + remaining - 1);
+      if (error) throw error;
+      remote = (data || []) as InspectionRecordLike[];
+    }
+    markBackendUp();
 
     return {
-      records: merged,
-      total: (count || 0) + local.length,
+      records: [...extrasPage, ...remote],
+      total: (count || 0) + extras.length,
       usedLocalFallback: false,
     };
   } catch (error) {
     if (isNetworkFailure(error)) markBackendDown();
-    console.warn("Banco indisponível, usando registros locais:", error);
-    const start = (filters.page - 1) * filters.pageSize;
-    return {
-      records: local.slice(start, start + filters.pageSize),
-      total: local.length,
-      usedLocalFallback: true,
-    };
+    console.warn("Banco indisponível, usando registros locais e do Drive:", error);
+    return localResult();
   }
 };
 
@@ -181,6 +199,10 @@ export const saveInspection = async (
 };
 
 export const deleteInspection = async (id: string): Promise<void> => {
+  if (id.startsWith("drive-")) {
+    await trashDriveFile(id.slice(6));
+    return;
+  }
   if (isLocalInspectionId(id)) {
     await deleteLocalInspectionRecord(id);
     return;
