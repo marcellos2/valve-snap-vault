@@ -218,7 +218,7 @@ const RecordCard = ({
 
       {/* Actions */}
       <div className="flex items-center gap-1 p-2 bg-muted/30">
-        {onEdit && (
+        {onEdit && !record.id.startsWith("drive-") && (
           <Button
             size="sm"
             variant="ghost"
