@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, RotateCw, X, ClipboardPaste } from "lucide-react";
+import { Camera, Upload, CloudUpload, ChevronRight, RotateCw, X, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
@@ -8,6 +8,7 @@ import { fetchDriveImageFromText } from "@/lib/upload-to-drive";
 interface PhotoUploaderProps {
   title: string;
   subtitle: string;
+  stage?: 1 | 2 | 3;
   photo: string | null;
   onPhotoChange: (photo: string) => void;
   onRotate: () => void;
@@ -17,6 +18,7 @@ interface PhotoUploaderProps {
 export const PhotoUploader = ({
   title,
   subtitle,
+  stage = 1,
   photo,
   onPhotoChange,
   onRotate,
@@ -135,12 +137,13 @@ export const PhotoUploader = ({
       <Card
         tabIndex={0}
         onPaste={handlePaste}
-        className="overflow-hidden border border-border hover:border-primary/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 group"
+        className={`photo-stage stage-${stage} overflow-hidden border border-border hover:border-primary/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 group`}
       >
         {/* Header do card */}
-        <div className="bg-primary px-4 py-3">
-          <h3 className="font-semibold text-sm text-primary-foreground">{title}</h3>
-          <p className="text-xs text-primary-foreground/80">{subtitle}</p>
+        <div className="stage-heading flex items-center gap-3 px-4 py-3 text-primary-foreground">
+          <span className="stage-number flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card text-primary font-bold text-lg">{stage}</span>
+          <div className="min-w-0"><h3 className="font-semibold text-[13px]">{title}</h3><p className="text-[10px] text-primary-foreground/90">{subtitle}</p></div>
+          <ChevronRight className="ml-auto h-4 w-4 shrink-0" />
         </div>
 
         <div className="p-4 bg-card">
@@ -149,7 +152,7 @@ export const PhotoUploader = ({
               <img
                 src={photo}
                 alt={title}
-                className="w-full h-52 object-cover rounded-lg"
+                className="w-full h-[112px] object-cover rounded-lg"
               />
               <div className="absolute top-2 right-2 flex gap-1.5">
                 <Button
@@ -172,7 +175,7 @@ export const PhotoUploader = ({
             </div>
           ) : (
             <div 
-              className={`h-52 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all duration-300 cursor-pointer ${
+              className={`h-[112px] bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all duration-300 cursor-pointer ${
                 isDragging 
                   ? 'border-primary bg-primary/5 scale-[1.02]' 
                   : 'border-border hover:border-primary/50 hover:bg-muted/50'
@@ -184,19 +187,19 @@ export const PhotoUploader = ({
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="text-center p-4">
-                <div className={`mx-auto mb-3 w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  isDragging ? 'bg-primary/10' : 'bg-muted'
+                <div className={`mx-auto mb-1 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  isDragging ? 'bg-primary/10' : 'bg-transparent'
                 }`}>
-                  <Upload className={`h-7 w-7 transition-all duration-300 ${
+                  <CloudUpload className={`h-7 w-7 transition-all duration-300 ${
                     isDragging ? 'text-primary scale-110' : 'text-muted-foreground'
                   }`} />
                 </div>
-                <p className={`text-sm font-medium transition-colors ${
+                <p className={`text-xs font-medium transition-colors ${
                   isDragging ? 'text-primary' : 'text-muted-foreground'
                 }`}>
                   {isDragging ? 'Solte a imagem aqui' : (loadingDrive ? 'Buscando foto no Drive...' : 'Arraste, clique ou Ctrl+V')}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[9px] text-muted-foreground mt-1">
                   JPG, PNG ou WEBP
                 </p>
               </div>
@@ -207,27 +210,27 @@ export const PhotoUploader = ({
             <Button
               onClick={() => setShowCamera(true)}
               size="sm"
-              className="flex-1 shadow-sm hover:shadow-md transition-shadow"
+              className="camera-stage flex-1 min-w-0 px-2 gap-1 shadow-sm hover:shadow-md transition-shadow"
             >
-              <Camera className="h-4 w-4 mr-1.5" />
+              <Camera className="h-3.5 w-3.5" />
               Câmera
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 hover:bg-muted transition-colors"
+              className="flex-1 min-w-0 px-2 gap-1 hover:bg-muted transition-colors"
             >
-              <Upload className="h-4 w-4 mr-1.5" />
+              <Upload className="h-3.5 w-3.5" />
               Arquivo
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handlePasteButton}
-              className="flex-1 hover:bg-muted transition-colors"
+              className="flex-1 min-w-0 px-2 gap-1 hover:bg-muted transition-colors"
             >
-              <ClipboardPaste className="h-4 w-4 mr-1.5" />
+              <ClipboardPaste className="h-3.5 w-3.5" />
               {loadingDrive ? "Buscando..." : "Colar"}
             </Button>
           </div>
