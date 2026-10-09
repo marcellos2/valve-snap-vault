@@ -28,38 +28,21 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
   }, [darkMode]);
 
   const menuItems = [
-    { icon: ClipboardCheck, label: "Nova Inspeção", value: "inspection" as const, description: "Iniciar inspeção", gradient: "from-primary to-primary-dark" },
-    { icon: History, label: "Histórico", value: "history" as const, description: "Ver registros", gradient: "from-orange-500 to-red-600" },
-    { icon: FileText, label: "Relatórios", value: "reports" as const, description: "Gerar relatórios", gradient: "from-blue-500 to-indigo-600" },
+    { icon: ClipboardCheck, label: "Nova Inspeção", value: "inspection" as const, description: "Iniciar inspeção", tone: "text-primary bg-primary/10" },
+    { icon: History, label: "Histórico", value: "history" as const, description: "Ver registros", tone: "text-brand-orange bg-brand-orange/10" },
+    { icon: FileText, label: "Relatórios", value: "reports" as const, description: "Gerar relatórios", tone: "text-brand-violet bg-brand-violet/10" },
   ];
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-500 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-primary/3 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-      </div>
-
       {/* Header */}
       <header className="relative z-20">
         {/* Curved background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-[hsl(345,80%,15%)]">
-            {/* Noise texture */}
-            <div className="absolute inset-0 opacity-30 mix-blend-soft-light noise-overlay" />
-            
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl -translate-x-1/4 translate-y-1/4" />
-            
-            {/* Grid pattern */}
-            <div className="absolute inset-0 opacity-5" style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-              backgroundSize: '40px 40px'
-            }} />
+          <div className="absolute inset-0 bg-header">
+            <div className="absolute top-0 inset-x-0 h-1 brand-spectrum" />
           </div>
-          
+
           {/* Curved bottom */}
           <svg 
             viewBox="0 0 1440 120" 
@@ -74,21 +57,21 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
           {/* Top bar */}
           <div className="flex items-center justify-between mb-6 animate-slide-down">
             <div className="flex items-center gap-3">
-              <button 
+              <Button variant="ghost" 
                 onClick={() => onTabChange("inspection")}
                 className="relative group cursor-pointer"
                 title="Voltar ao início"
               >
-                <div className="absolute inset-0 bg-white/20 rounded-xl blur-md group-hover:bg-white/30 transition-all" />
+                <div className="absolute inset-0 bg-header-foreground/20 rounded-xl blur-md group-hover:bg-header-foreground/30 transition-all" />
                 <img 
                   src="/logo-192.png" 
                   alt="Tecnoiso" 
                   className="relative w-11 h-11 object-contain group-hover:scale-110 transition-transform duration-300" 
                 />
-              </button>
+              </Button>
               <div>
-                <h1 className="text-lg font-bold text-white tracking-tight">Tecnoiso</h1>
-                <p className="text-xs text-white/60 font-medium">Sistema de Inspeção</p>
+                <h1 className="text-lg font-bold text-header-foreground ">Tecnoiso</h1>
+                <p className="text-xs text-header-foreground/60 font-medium">Sistema de Inspeção</p>
               </div>
             </div>
 
@@ -97,7 +80,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/diagnostico")}
-                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                className="text-header-foreground/80 hover:text-header-foreground hover:bg-header-foreground/10 rounded-xl h-10 w-10 transition-all duration-300"
                 title="Diagnóstico"
               >
                 <Activity className="w-5 h-5" />
@@ -107,7 +90,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/google-photos-sync")}
-                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                className="text-header-foreground/80 hover:text-header-foreground hover:bg-header-foreground/10 rounded-xl h-10 w-10 transition-all duration-300"
                 title="Google Photos"
               >
                 <Images className="w-5 h-5" />
@@ -117,7 +100,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/install")}
-                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                className="text-header-foreground/80 hover:text-header-foreground hover:bg-header-foreground/10 rounded-xl h-10 w-10 transition-all duration-300"
               >
                 <Download className="w-5 h-5" />
               </Button>
@@ -126,7 +109,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                 variant="ghost"
                 size="icon"
                 onClick={() => setDarkMode(!darkMode)}
-                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                className="text-header-foreground/80 hover:text-header-foreground hover:bg-header-foreground/10 rounded-xl h-10 w-10 transition-all duration-300"
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
@@ -135,7 +118,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
 
           {/* Title section */}
           <div className="text-center animate-fade-in">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-header-foreground ">
               Inspeções de Válvulas
             </h2>
           </div>
@@ -148,14 +131,14 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
         {activeTab === "inspection" && (
           <div className="grid grid-cols-2 gap-3 mb-6 stagger-children">
             {menuItems.map((item) => (
-              <button
+              <Button variant="ghost"
                 key={item.value}
                 onClick={() => onTabChange(item.value)}
                 className={cn(
-                  "group relative flex flex-col items-center justify-center p-5 rounded-2xl transition-all duration-300",
+                  "group relative h-auto whitespace-normal flex flex-col items-center justify-center p-5 rounded-2xl transition-all duration-300",
                   "hover:scale-[1.02] active:scale-[0.98] will-change-transform",
                   activeTab === item.value
-                    ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl shadow-primary/25"
+                    ? "bg-gradient-to-br from-primary to-primary-dark text-header-foreground shadow-xl shadow-primary/25"
                     : "premium-card glow-hover"
                 )}
               >
@@ -167,27 +150,27 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                 <div className={cn(
                   "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300",
                   activeTab === item.value
-                    ? "bg-white/20 backdrop-blur-sm"
-                    : "bg-primary/10 group-hover:bg-primary/15 group-hover:scale-105"
+                    ? "bg-header-foreground/20 backdrop-blur-sm"
+                    : cn(item.tone, "group-hover:scale-105")
                 )}>
                   <item.icon className={cn(
                     "w-7 h-7 transition-colors duration-300",
-                    activeTab === item.value ? "text-white" : "text-primary"
+                    activeTab === item.value ? "text-primary-foreground" : ""
                   )} />
                 </div>
                 <span className={cn(
                   "font-semibold text-sm transition-colors",
-                  activeTab === item.value ? "text-white" : "text-foreground"
+                  activeTab === item.value ? "text-header-foreground" : "text-foreground"
                 )}>
                   {item.label}
                 </span>
                 <span className={cn(
                   "text-xs mt-1 transition-colors",
-                  activeTab === item.value ? "text-white/70" : "text-muted-foreground"
+                  activeTab === item.value ? "text-header-foreground/70" : "text-muted-foreground"
                 )}>
                   {item.description}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -201,14 +184,14 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
       {/* Bottom Navigation - Glass effect */}
       <nav className="fixed bottom-0 left-0 right-0 z-50">
         <div className="mx-3 mb-3 sm:mx-auto sm:max-w-md">
-          <div className="glass-card rounded-2xl px-2 py-2 shadow-xl shadow-black/10">
+          <div className="glass-card rounded-2xl px-2 py-2 shadow-xl shadow-foreground/10">
             <div className="flex items-center justify-around">
               {menuItems.map((item) => (
-                <button
+                <Button variant="ghost"
                   key={item.value}
                   onClick={() => onTabChange(item.value)}
                   className={cn(
-                    "nav-pill flex flex-col items-center justify-center py-2 px-3 min-w-[60px] transition-all duration-300",
+                    "nav-pill h-auto flex flex-col items-center justify-center py-2 px-3 min-w-[60px] transition-all duration-300",
                     activeTab === item.value ? "active" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -230,7 +213,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
                   )}>
                     {item.label}
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -239,11 +222,11 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
 
       {/* FAB - Floating Action Button */}
       {activeTab !== "inspection" && (
-        <button
+        <Button variant="ghost"
           onClick={() => onTabChange("inspection")}
           className={cn(
             "fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full",
-            "bg-gradient-to-br from-primary to-primary-dark text-white",
+            "bg-gradient-to-br from-primary to-primary-dark text-header-foreground",
             "shadow-lg shadow-primary/40 hover:shadow-xl hover:shadow-primary/50",
             "flex items-center justify-center",
             "hover:scale-110 active:scale-95 transition-all duration-300",
@@ -252,7 +235,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark rounded-full blur-lg opacity-50 animate-pulse-soft" />
           <Plus className="w-6 h-6 relative z-10" />
-        </button>
+        </Button>
       )}
     </div>
   );
