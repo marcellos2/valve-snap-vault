@@ -317,9 +317,10 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div id="inspection-photos" className="grid grid-cols-1 md:grid-cols-3 gap-4 scroll-mt-4">
         <PhotoUploader
-          title="INÍCIO DA INSPEÇÃO"
+          stage={1}
+          title="Início da Inspeção"
           subtitle="Válvula no recebimento"
           photo={photoInitial}
           onPhotoChange={setPhotoInitial}
@@ -328,7 +329,8 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         />
 
         <PhotoUploader
-          title="DURANTE A INSPEÇÃO"
+          stage={2}
+          title="Durante a Inspeção"
           subtitle="Válvula trabalhando"
           photo={photoDuring}
           onPhotoChange={setPhotoDuring}
@@ -337,7 +339,8 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         />
 
         <PhotoUploader
-          title="TÉRMINO DA INSPEÇÃO"
+          stage={3}
+          title="Término da Inspeção"
           subtitle="Válvula pronta"
           photo={photoFinal}
           onPhotoChange={setPhotoFinal}
@@ -346,35 +349,16 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         />
       </div>
 
-      <Card className="p-6 border-2 border-border bg-card shadow-lg hover:shadow-xl transition-all duration-300">
-        <div>
-          <Label htmlFor="valveCode" className="text-sm font-semibold text-foreground flex items-center gap-2">
-            Código da Válvula 
-            <span className="flex items-center gap-1 text-destructive">
-              <AlertCircle className="h-3.5 w-3.5" />
-              obrigatório
-            </span>
-          </Label>
-          <div className="mt-3">
-            <Input
-              ref={valveCodeRef}
-              id="valveCode"
-              value={valveCode}
-              onChange={(e) => setValveCode(e.target.value.toUpperCase())}
-              placeholder="Ex: VLV-001"
-              autoCapitalize="characters"
-              autoCorrect="off"
-              spellCheck={false}
-              style={{ textTransform: "uppercase" }}
-              className="h-11 bg-background border-2 border-border text-foreground focus:border-primary transition-all duration-200 uppercase"
-            />
+      <div className="inspection-save-row flex flex-wrap items-center gap-6 rounded-xl border border-border bg-card p-5">
+        <div className="min-w-0 flex-1">
+          <Label htmlFor="valveCode" className="text-xs font-medium text-muted-foreground">Código da Válvula <span className="text-destructive">*</span></Label>
+          <div className="flex items-center gap-3 mt-1">
+            <Input ref={valveCodeRef} id="valveCode" value={valveCode} onChange={e => setValveCode(e.target.value.toUpperCase())} placeholder="Digite o código da válvula..." autoCapitalize="characters" autoCorrect="off" spellCheck={false} className="h-9 max-w-md bg-background/50 text-xs uppercase" />
+            <span className="hidden xl:block text-[10px] text-muted-foreground">Ex.: V-001, VLV-023, etc.</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
-            Campo obrigatório para salvar o relatório
-          </p>
         </div>
-      </Card>
+        <Button onClick={handleSave} disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)} className="reference-spectrum h-11 w-full sm:w-[210px] text-primary-foreground shadow-sm disabled:opacity-60"><Save className="h-5 w-5" />{isSaving ? "Salvando..." : editingRecord ? "Atualizar inspeção" : "Salvar inspeção"}</Button>
+      </div>
 
       {!isOnline && !editingRecord && (
         <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-xl text-warning">
@@ -385,40 +369,8 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         </div>
       )}
 
-      <Button
-        onClick={handleSave}
-        disabled={isSaving || (!photoInitial && !photoDuring && !photoFinal && !editingRecord)}
-        className="w-full h-12 gradient-primary text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Salvando...
-          </>
-        ) : !isOnline && !editingRecord ? (
-          <>
-            <WifiOff className="mr-2 h-5 w-5" />
-            Salvar Offline
-          </>
-        ) : (
-          <>
-            <Save className="mr-2 h-5 w-5" />
-            {editingRecord ? "Atualizar Inspeção" : "Salvar Relatório"}
-          </>
-        )}
-      </Button>
-      
-      {!editingRecord && (photoInitial || photoDuring || photoFinal) && isOnline && (
-        <p className="text-xs text-muted-foreground text-center bg-muted/50 border border-border rounded-lg p-3">
-          💡 Você pode salvar com fotos parciais e adicionar as restantes depois
-        </p>
-      )}
-
-      <div className="space-y-3 pt-6 border-t-2 border-border">
-        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Copy className="h-4 w-4" />
-          Textos Padronizados
-        </h3>
+      <details className="space-y-3 pt-2">
+        <summary className="text-xs font-semibold text-muted-foreground cursor-pointer">Textos Padronizados</summary>
         {standardTexts.map((item) => (
           <Card key={item.id} className="p-4 border-2 border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-200">
             <div className="flex items-start justify-between gap-3">
@@ -441,7 +393,7 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
             </div>
           </Card>
         ))}
-      </div>
+      </details>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { applyTheme } from "@/components/ThemeSettings";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<"inspection" | "history" | "reports">("inspection");
+  const [historySearch, setHistorySearch] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
@@ -50,6 +51,7 @@ const Index = () => {
         return (
           <InspectionHistory 
             refreshTrigger={refreshTrigger}
+            initialSearch={historySearch}
             onEditRecord={handleEditRecord}
           />
         );
@@ -63,6 +65,8 @@ const Index = () => {
       activeTab={activeTab} 
       onTabChange={setActiveTab}
       title={getTitle()}
+      refreshTrigger={refreshTrigger}
+      onSearch={(term) => { setHistorySearch(term); setActiveTab("history"); }}
     >
       {renderContent()}
     </AppLayoutV2>
