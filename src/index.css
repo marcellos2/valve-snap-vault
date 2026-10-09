@@ -2,56 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System Tecnoiso - JetBrains-inspired palette */
+/* Design System Tecnoiso - Premium Theme */
 
 @layer base {
   :root {
-    /* Shared reference accents */
-    --brand-orange: 26.637 97.380% 55.098%;
-    --brand-pink: 346.822 99.074% 57.647%;
-    --brand-yellow: 58.652 96.739% 63.922%;
-    --brand-violet: 247.143 100% 67.059%;
-    --brand-purple: 280.556 91.525% 53.725%;
-    --brand-red: 0 100% 62.549%;
-    --brand-rose: 330 50.394% 50.196%;
-    --header: 0 0% 0%;
-    --header-foreground: 0 0% 100%;
-    --brand-spectrum: linear-gradient(90deg, hsl(var(--brand-orange)), hsl(var(--brand-pink)), hsl(var(--brand-purple)), hsl(var(--primary)), hsl(var(--brand-yellow)));
     /* Tema Claro */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 0%;
+    --background: 220 20% 97%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Primary blue */
-    --primary: 211.240 96.032% 50.588%;
+    /* Cor de Vinho - Wine Red */
+    --primary: 345 70% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 211 96% 38%;
-    --primary-glow: 209.882 100% 50%;
+    --primary-dark: 345 75% 20%;
+    --primary-glow: 345 65% 40%;
 
-    --secondary: 0 0% 92%;
+    --secondary: 220 15% 92%;
     --secondary-foreground: 0 0% 20%;
 
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 346.822 99.074% 57.647%;
+    --accent: 0 72% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 335.468 84.937% 46.863%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 86%;
+    --border: 220 15% 88%;
     --input: 0 0% 100%;
-    --ring: 346.822 99.074% 57.647%;
+    --ring: 0 72% 45%;
 
     --success: 152 69% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 42.250 98.361% 52.157%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
     --radius: 1rem;
@@ -63,61 +52,61 @@
     /* Sidebar tema claro */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 25%;
-    --sidebar-primary: 346.822 99.074% 57.647%;
+    --sidebar-primary: 0 72% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent: 220 15% 95%;
     --sidebar-accent-foreground: 0 0% 25%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 346.822 99.074% 57.647%;
-    --sidebar-muted: 0 0% 55%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 0 72% 45%;
+    --sidebar-muted: 220 10% 55%;
   }
 
   .dark {
     /* Tema Escuro Premium */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 100%;
+    --card: 240 10% 7%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 240 10% 7%;
+    --popover-foreground: 0 0% 95%;
 
-    /* Primary blue in dark mode */
-    --primary: 211.240 96.032% 50.588%;
+    /* Cor de Vinho - Wine Red no escuro */
+    --primary: 345 70% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 211 96% 38%;
-    --primary-glow: 209.882 100% 50%;
+    --primary-dark: 345 75% 25%;
+    --primary-glow: 345 65% 45%;
 
-    --secondary: 0 0% 12%;
+    --secondary: 240 10% 12%;
     --secondary-foreground: 0 0% 90%;
 
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 240 10% 14%;
+    --muted-foreground: 240 5% 55%;
 
-    --accent: 346.822 99.074% 57.647%;
+    --accent: 0 72% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 335.468 84.937% 46.863%;
+    --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 10%;
-    --ring: 346.822 99.074% 57.647%;
+    --border: 240 10% 15%;
+    --input: 240 10% 10%;
+    --ring: 0 72% 50%;
 
     /* Glass effect dark */
-    --glass-bg: 0 0% 10% / 0.6;
+    --glass-bg: 240 10% 10% / 0.6;
     --glass-border: 0 0% 100% / 0.08;
 
     /* Sidebar tema escuro */
-    --sidebar-background: 0 0% 4%;
+    --sidebar-background: 240 10% 5%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 346.822 99.074% 57.647%;
+    --sidebar-primary: 0 72% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent: 240 10% 12%;
     --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 346.822 99.074% 57.647%;
+    --sidebar-border: 240 10% 12%;
+    --sidebar-ring: 0 72% 50%;
     --sidebar-muted: 240 5% 50%;
   }
 }
@@ -136,14 +125,11 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold;
-    letter-spacing: 0;
+    @apply font-semibold tracking-tight;
   }
 }
 
 @layer components {
-  .brand-spectrum { background: var(--brand-spectrum); }
-
   /* Glass Card */
   .glass-card {
     background: hsl(var(--glass-bg));

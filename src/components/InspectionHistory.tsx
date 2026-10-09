@@ -278,17 +278,14 @@ const CardSkeleton = () => (
 
 export const InspectionHistory = ({ 
   refreshTrigger, 
-  onEditRecord,
-  initialSearch = ""
+  onEditRecord 
 }: { 
   refreshTrigger: number;
-  initialSearch?: string;
   onEditRecord?: (record: InspectionRecord) => void;
 }) => {
   const { toast } = useToast();
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
-  useEffect(() => { setSearchTerm(initialSearch); }, [initialSearch]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date; to?: Date }>({
     from: new Date(),

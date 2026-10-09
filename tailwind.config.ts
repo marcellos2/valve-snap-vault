@@ -14,16 +14,6 @@ export default {
     },
     extend: {
       colors: {
-        header: { DEFAULT: "hsl(var(--header))", foreground: "hsl(var(--header-foreground))" },
-        brand: {
-          orange: "hsl(var(--brand-orange))",
-          pink: "hsl(var(--brand-pink))",
-          yellow: "hsl(var(--brand-yellow))",
-          violet: "hsl(var(--brand-violet))",
-          purple: "hsl(var(--brand-purple))",
-          red: "hsl(var(--brand-red))",
-          rose: "hsl(var(--brand-rose))",
-        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -52,31 +52,6 @@ interface ThemePreset {
 
 const themePresets: ThemePreset[] = [
   {
-    id: "jetbrains",
-    name: "JetBrains",
-    description: "Preto e branco com destaques vibrantes",
-    category: "vibrant",
-    primary: "211.240 96.032% 50.588%",
-    dark: "211 96% 38%",
-    glow: "209.882 100% 50%",
-    accent: "346.822 99.074% 57.647%",
-    fontSize: 16,
-    borderRadius: 16,
-    animations: true,
-    glassEffect: true,
-    compactMode: false,
-    darkMode: true,
-    fontFamily: "system-ui",
-    spacing: 1,
-    shadowIntensity: 0.3,
-    preview: {
-      bg: "hsl(var(--header))",
-      accent: "hsl(var(--brand-orange))",
-      text: "hsl(var(--header-foreground))",
-      gradient: "var(--brand-spectrum)",
-    },
-  },
-  {
     id: "wine-classic",
     name: "Vinho Clássico",
     description: "Elegante e sofisticado",
@@ -328,7 +303,7 @@ const themePresets: ThemePreset[] = [
   },
 ];
 
-const DEFAULT_THEME_ID = "jetbrains";
+const DEFAULT_THEME_ID = "wine-classic";
 
 const fontOptions = [
   { value: "system-ui", label: "Sistema" },
@@ -341,13 +316,6 @@ const fontOptions = [
 const loadThemeConfig = (): ThemeConfig => {
   try {
     const saved = localStorage.getItem("themeConfig");
-    if (localStorage.getItem("paletteVersion") !== "jetbrains-v1") {
-      const previous: ThemeConfig | undefined = saved ? JSON.parse(saved) : undefined;
-      const migrated: ThemeConfig = { themeId: DEFAULT_THEME_ID, customSettings: previous?.customSettings };
-      localStorage.setItem("themeConfig", JSON.stringify(migrated));
-      localStorage.setItem("paletteVersion", "jetbrains-v1");
-      return migrated;
-    }
     if (saved) {
       return JSON.parse(saved);
     }

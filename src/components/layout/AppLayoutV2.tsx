@@ -1,13 +1,7 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
-import { Home, History, FileText, Settings, Search, ChevronRight, ArrowRight, Clock, TrendingUp, Activity, Download, Images, Moon, Sun } from "lucide-react";
+import { ReactNode, useState, useEffect } from "react";
+import { ClipboardCheck, History, FileText, Moon, Sun, Download, Plus, Activity, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ThemeSettings } from "@/components/ThemeSettings";
-import { loadInspectionHistory } from "@/lib/inspections-repo";
 import { useNavigate } from "react-router-dom";
-import logo from "@/assets/tecnoiso-logo.png.asset.json";
-import reports from "@/assets/reports.png.asset.json";
 import { cn } from "@/lib/utils";
 
 interface AppLayoutV2Props {
@@ -15,88 +9,251 @@ interface AppLayoutV2Props {
   activeTab: "inspection" | "history" | "reports";
   onTabChange: (tab: "inspection" | "history" | "reports") => void;
   title: string;
-  refreshTrigger?: number;
-  onSearch?: (term: string) => void;
 }
 
-export const AppLayoutV2 = ({ children, activeTab, onTabChange, title, refreshTrigger, onSearch }: AppLayoutV2Props) => {
+export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayoutV2Props) => {
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : true;
+  });
   const navigate = useNavigate();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [metrics, setMetrics] = useState({ total: 0, pending: 0, complete: 0, latest: "—" });
-  const [darkMode, setDarkMode] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    if (localStorage.getItem("referenceLayoutVersion") !== "v1") {
-      localStorage.setItem("darkMode", "false");
-      localStorage.setItem("referenceLayoutVersion", "v1");
-      const saved = localStorage.getItem("themeConfig");
-      if (saved) { try { const config = JSON.parse(saved); config.customSettings = { ...config.customSettings, darkMode: false }; localStorage.setItem("themeConfig", JSON.stringify(config)); } catch {} }
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-    const dark = localStorage.getItem("darkMode") === "true";
-    setDarkMode(dark);
-    document.documentElement.classList.toggle("dark", dark);
-  }, []);
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      loadInspectionHistory({ page: 1, pageSize: 1, search: "", status: "all" }),
-      loadInspectionHistory({ page: 1, pageSize: 1, search: "", status: "em_andamento" }),
-      loadInspectionHistory({ page: 1, pageSize: 1, search: "", status: "concluido" }),
-    ]).then(([all, pending, complete]) => {
-      if (cancelled) return;
-      const date = all.records[0]?.inspection_date;
-      setMetrics({ total: all.total, pending: pending.total, complete: complete.total, latest: date ? new Date(date).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—" });
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [refreshTrigger]);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key === "k") { e.preventDefault(); searchRef.current?.focus(); } };
-    window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler);
-  }, []);
-  const nav = [{ label: "Início", icon: Home, value: "inspection" as const }, { label: "Histórico", icon: History, value: "history" as const }, { label: "Relatórios", icon: FileText, value: "reports" as const }];
-  const toggleTheme = () => { const next = !darkMode; setDarkMode(next); document.documentElement.classList.toggle("dark", next); localStorage.setItem("darkMode", JSON.stringify(next)); };
+  }, [darkMode]);
+
+  const menuItems = [
+    { icon: ClipboardCheck, label: "Nova Inspeção", value: "inspection" as const, description: "Iniciar inspeção", gradient: "from-primary to-primary-dark" },
+    { icon: History, label: "Histórico", value: "history" as const, description: "Ver registros", gradient: "from-orange-500 to-red-600" },
+    { icon: FileText, label: "Relatórios", value: "reports" as const, description: "Gerar relatórios", gradient: "from-blue-500 to-indigo-600" },
+  ];
+
   return (
-    <div className="reference-app min-h-screen bg-background text-foreground">
-      <aside className="reference-sidebar fixed inset-y-0 left-0 z-40 hidden lg:flex w-[226px] flex-col bg-header text-header-foreground">
-        <Button variant="ghost" className="h-auto justify-start gap-3 px-6 py-5 hover:bg-header-foreground/5" onClick={() => onTabChange("inspection")}>
-          <img src={logo.url} alt="Tecnoiso" className="h-14 w-14 rounded-xl object-cover" />
-          <span className="text-left"><strong className="block text-xl">Tecnoiso</strong><span className="text-xs font-normal text-header-foreground/70">Sistema de Inspeção</span></span>
-        </Button>
-        <nav className="space-y-2 px-4 pt-4" aria-label="Menu principal">
-          {nav.map(item => <Button key={item.value} variant="ghost" onClick={() => onTabChange(item.value)} className={cn("w-full justify-start h-11 gap-4 px-4 text-header-foreground/80 hover:bg-header-foreground/10 hover:text-header-foreground", activeTab === item.value && "reference-spectrum text-header-foreground")}><item.icon className="h-5 w-5" />{item.label}</Button>)}
-          <Button variant="ghost" onClick={() => setSettingsOpen(true)} className="w-full justify-start h-11 gap-4 px-4 text-header-foreground/80 hover:bg-header-foreground/10"><Settings className="h-5 w-5" />Configurações</Button>
-        </nav>
-        <div className="sidebar-ribbon" aria-hidden="true" />
-        <Button variant="ghost" className="mt-auto m-4 h-16 justify-start gap-3 text-header-foreground/80 hover:bg-header-foreground/10" onClick={() => navigate("/google-photos-sync")}><span className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-foreground font-bold">T</span><span className="text-left text-xs">Tecnoiso<span className="block mt-1 text-header-foreground/50">Conta Google</span></span><ChevronRight className="ml-auto" /></Button>
-      </aside>
-      <div className="lg:ml-[226px] px-4 sm:px-6 pb-24 lg:pb-8">
-        <header className="flex h-[68px] items-center justify-between gap-3">
-          <form className="relative w-full max-w-[465px]" onSubmit={e => { e.preventDefault(); onSearch?.(search); }}>
-            <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" /><Input ref={searchRef} aria-label="Buscar inspeções" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar inspeções, válvulas ou códigos..." className="h-9 rounded-full bg-card/50 pl-11 pr-16 text-xs" /><span className="absolute right-4 top-2.5 text-[10px] text-muted-foreground hidden sm:block">Ctrl + K</span>
-          </form>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" title="Diagnóstico" onClick={() => navigate("/diagnostico")}><Activity /></Button>
-            <Button variant="ghost" size="icon" title="Google Drive" onClick={() => navigate("/google-photos-sync")}><Images /></Button>
-            <Button variant="ghost" size="icon" title="Baixar aplicativo" onClick={() => navigate("/install")}><Download /></Button>
-            <Button variant="ghost" size="icon" title="Alternar tema" onClick={toggleTheme}>{darkMode ? <Sun /> : <Moon />}</Button>
-          </div>
-        </header>
-        {activeTab === "inspection" ? <>
-          <section className="reference-banner relative flex items-center justify-between gap-6 overflow-hidden rounded-xl px-6 py-6 mb-4">
-            <div className="relative z-10 max-w-md border-l-2 border-brand-pink pl-4"><p className="text-[10px] text-header-foreground/80 font-semibold mb-2">SISTEMA DE INSPEÇÃO DE VÁLVULAS</p><h1 className="text-[25px] leading-tight font-bold text-header-foreground">Mais <span className="text-brand-orange">segurança</span> e <span className="text-brand-pink">eficiência</span><br className="hidden xl:block" /> para o seu processo.</h1><p className="text-xs leading-relaxed text-header-foreground/80 mt-2">Realize inspeções, acompanhe o histórico e gere relatórios<br className="hidden xl:block" /> com agilidade e praticidade.</p></div>
-            <Button variant="ghost" onClick={() => document.getElementById("inspection-photos")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="reference-new h-auto min-w-0 w-[340px] shrink-0 justify-start gap-4 rounded-xl p-4 mr-[12%] bg-card/90 text-foreground hover:bg-card hidden xl:flex"><img src={logo.url} alt="" className="h-14 w-14 rounded-xl" /><span className="text-left"><strong className="block text-base">Nova Inspeção</strong><span className="text-xs font-normal text-muted-foreground">Iniciar inspeção de válvula</span></span><span className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-brand-violet text-primary-foreground"><ArrowRight /></span></Button>
-            <img src={logo.url} alt="" className="absolute right-2 h-40 w-40 object-contain opacity-15" />
-          </section>
-          <section className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6" aria-label="Resumo de inspeções">
-            {[{ label: "Inspeções realizadas", value: metrics.total, asset: logo.url, tab: "history" as const }, { label: "Pendentes", value: metrics.pending, icon: Clock, tone: "metric-orange", tab: "history" as const }, { label: "Inspeções concluídas", value: metrics.complete, icon: FileText, tone: "metric-violet", tab: "reports" as const }, { label: "Última inspeção", value: metrics.latest, icon: TrendingUp, tone: "metric-blue", tab: "history" as const }].map(item => <Button variant="ghost" key={item.label} className="reference-metric h-[92px] justify-start rounded-xl border border-border bg-card px-4 gap-4 hover:bg-muted" onClick={() => onTabChange(item.tab)}>{item.asset ? <img src={item.asset} alt="" className="h-12 w-12 rounded-xl" /> : <span className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 text-primary-foreground", item.tone)}>{item.icon && <item.icon className="h-6 w-6" />}</span>}<span className="min-w-0 text-left"><strong className={cn("block", typeof item.value === "number" ? "text-xl" : "text-xs")}>{item.value}</strong><span className="block text-[11px] text-muted-foreground mt-1 whitespace-normal">{item.label}</span></span><ChevronRight className="ml-auto text-muted-foreground shrink-0" /></Button>)}
-          </section>
-          <div className="flex items-center justify-between mb-3"><h2 className="section-title text-xl font-bold">Inspeções de Válvulas</h2><Button variant="ghost" className="text-xs text-primary" onClick={() => onTabChange("history")}>Ver todas <ArrowRight className="h-4 w-4" /></Button></div>
-        </> : <h1 className="text-2xl font-bold my-6">{title}</h1>}
-        {children}
+    <div className="min-h-screen bg-background transition-colors duration-500 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-primary/3 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
       </div>
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 flex justify-around border-t border-border bg-card p-2" aria-label="Navegação móvel">{nav.map(item => <Button key={item.value} variant="ghost" className={cn("flex-col h-14 text-xs gap-1", activeTab === item.value && "text-primary")} onClick={() => onTabChange(item.value)}><item.icon />{item.label}</Button>)}<Button variant="ghost" title="Configurações" onClick={() => setSettingsOpen(true)}><Settings /></Button></nav>
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}><DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Configurações</DialogTitle></DialogHeader><ThemeSettings /></DialogContent></Dialog>
+
+      {/* Header */}
+      <header className="relative z-20">
+        {/* Curved background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-[hsl(345,80%,15%)]">
+            {/* Noise texture */}
+            <div className="absolute inset-0 opacity-30 mix-blend-soft-light noise-overlay" />
+            
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl -translate-x-1/4 translate-y-1/4" />
+            
+            {/* Grid pattern */}
+            <div className="absolute inset-0 opacity-5" style={{
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+              backgroundSize: '40px 40px'
+            }} />
+          </div>
+          
+          {/* Curved bottom */}
+          <svg 
+            viewBox="0 0 1440 120" 
+            className="absolute -bottom-1 left-0 right-0 w-full h-12 sm:h-16 fill-background"
+            preserveAspectRatio="none"
+          >
+            <path d="M0,80 C360,120 1080,40 1440,80 L1440,120 L0,120 Z" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 px-4 pt-4 pb-14 sm:pb-16">
+          {/* Top bar */}
+          <div className="flex items-center justify-between mb-6 animate-slide-down">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => onTabChange("inspection")}
+                className="relative group cursor-pointer"
+                title="Voltar ao início"
+              >
+                <div className="absolute inset-0 bg-white/20 rounded-xl blur-md group-hover:bg-white/30 transition-all" />
+                <img 
+                  src="/logo-192.png" 
+                  alt="Tecnoiso" 
+                  className="relative w-11 h-11 object-contain group-hover:scale-110 transition-transform duration-300" 
+                />
+              </button>
+              <div>
+                <h1 className="text-lg font-bold text-white tracking-tight">Tecnoiso</h1>
+                <p className="text-xs text-white/60 font-medium">Sistema de Inspeção</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/diagnostico")}
+                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                title="Diagnóstico"
+              >
+                <Activity className="w-5 h-5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/google-photos-sync")}
+                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+                title="Google Photos"
+              >
+                <Images className="w-5 h-5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/install")}
+                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+              >
+                <Download className="w-5 h-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDarkMode(!darkMode)}
+                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10 transition-all duration-300"
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Title section */}
+          <div className="text-center animate-fade-in">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Inspeções de Válvulas
+            </h2>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="relative z-10 px-4 -mt-2 pb-28">
+        {/* Quick actions - only on inspection tab */}
+        {activeTab === "inspection" && (
+          <div className="grid grid-cols-2 gap-3 mb-6 stagger-children">
+            {menuItems.map((item) => (
+              <button
+                key={item.value}
+                onClick={() => onTabChange(item.value)}
+                className={cn(
+                  "group relative flex flex-col items-center justify-center p-5 rounded-2xl transition-all duration-300",
+                  "hover:scale-[1.02] active:scale-[0.98] will-change-transform",
+                  activeTab === item.value
+                    ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl shadow-primary/25"
+                    : "premium-card glow-hover"
+                )}
+              >
+                {/* Glow effect for active */}
+                {activeTab === item.value && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark rounded-2xl blur-xl opacity-40 -z-10" />
+                )}
+
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300",
+                  activeTab === item.value
+                    ? "bg-white/20 backdrop-blur-sm"
+                    : "bg-primary/10 group-hover:bg-primary/15 group-hover:scale-105"
+                )}>
+                  <item.icon className={cn(
+                    "w-7 h-7 transition-colors duration-300",
+                    activeTab === item.value ? "text-white" : "text-primary"
+                  )} />
+                </div>
+                <span className={cn(
+                  "font-semibold text-sm transition-colors",
+                  activeTab === item.value ? "text-white" : "text-foreground"
+                )}>
+                  {item.label}
+                </span>
+                <span className={cn(
+                  "text-xs mt-1 transition-colors",
+                  activeTab === item.value ? "text-white/70" : "text-muted-foreground"
+                )}>
+                  {item.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Content area */}
+        <div className="animate-fade-in">
+          {children}
+        </div>
+      </main>
+
+      {/* Bottom Navigation - Glass effect */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="mx-3 mb-3 sm:mx-auto sm:max-w-md">
+          <div className="glass-card rounded-2xl px-2 py-2 shadow-xl shadow-black/10">
+            <div className="flex items-center justify-around">
+              {menuItems.map((item) => (
+                <button
+                  key={item.value}
+                  onClick={() => onTabChange(item.value)}
+                  className={cn(
+                    "nav-pill flex flex-col items-center justify-center py-2 px-3 min-w-[60px] transition-all duration-300",
+                    activeTab === item.value ? "active" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <div className={cn(
+                    "relative transition-all duration-300",
+                    activeTab === item.value && "scale-110"
+                  )}>
+                    <item.icon className={cn(
+                      "w-5 h-5 transition-colors duration-300",
+                      activeTab === item.value ? "text-primary" : ""
+                    )} />
+                    {activeTab === item.value && (
+                      <div className="absolute -inset-2 bg-primary/20 rounded-full blur-md -z-10" />
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] mt-1.5 font-medium transition-colors duration-300",
+                    activeTab === item.value ? "text-primary" : ""
+                  )}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* FAB - Floating Action Button */}
+      {activeTab !== "inspection" && (
+        <button
+          onClick={() => onTabChange("inspection")}
+          className={cn(
+            "fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full",
+            "bg-gradient-to-br from-primary to-primary-dark text-white",
+            "shadow-lg shadow-primary/40 hover:shadow-xl hover:shadow-primary/50",
+            "flex items-center justify-center",
+            "hover:scale-110 active:scale-95 transition-all duration-300",
+            "animate-scale-in"
+          )}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark rounded-full blur-lg opacity-50 animate-pulse-soft" />
+          <Plus className="w-6 h-6 relative z-10" />
+        </button>
+      )}
     </div>
   );
 };
