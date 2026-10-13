@@ -52,31 +52,6 @@ interface ThemePreset {
 
 const themePresets: ThemePreset[] = [
   {
-    id: "jetbrains",
-    name: "JetBrains",
-    description: "Azul, laranja e rosa vibrantes",
-    category: "vibrant",
-    primary: "209 97% 51%",
-    dark: "211 100% 38%",
-    glow: "209 100% 62%",
-    accent: "27 97% 55%",
-    fontSize: 15,
-    borderRadius: 16,
-    animations: true,
-    glassEffect: true,
-    compactMode: false,
-    darkMode: false,
-    fontFamily: "system-ui",
-    spacing: 1,
-    shadowIntensity: 0.35,
-    preview: {
-      bg: "#087CFA",
-      accent: "#FC801D",
-      text: "#fff",
-      gradient: "linear-gradient(135deg, #087CFA 0%, #6B57FF 50%, #FE2857 75%, #FC801D 100%)"
-    },
-  },
-  {
     id: "wine-classic",
     name: "Vinho Clássico",
     description: "Elegante e sofisticado",
@@ -328,7 +303,7 @@ const themePresets: ThemePreset[] = [
   },
 ];
 
-const DEFAULT_THEME_ID = "jetbrains";
+const DEFAULT_THEME_ID = "wine-classic";
 
 const fontOptions = [
   { value: "system-ui", label: "Sistema" },

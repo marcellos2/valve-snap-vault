@@ -16,11 +16,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    /* Paleta JetBrains - Azul principal */
-    --primary: 209 97% 51%;
+    /* Cor de Vinho - Wine Red */
+    --primary: 345 70% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 211 100% 38%;
-    --primary-glow: 209 100% 62%;
+    --primary-dark: 345 75% 20%;
+    --primary-glow: 345 65% 40%;
 
     --secondary: 220 15% 92%;
     --secondary-foreground: 0 0% 20%;
@@ -28,8 +28,7 @@
     --muted: 220 15% 94%;
     --muted-foreground: 220 10% 45%;
 
-    /* Laranja JetBrains */
-    --accent: 27 97% 55%;
+    --accent: 0 72% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -37,7 +36,7 @@
 
     --border: 220 15% 88%;
     --input: 0 0% 100%;
-    --ring: 209 97% 51%;
+    --ring: 0 72% 45%;
 
     --success: 152 69% 40%;
     --success-foreground: 0 0% 100%;
@@ -53,12 +52,12 @@
     /* Sidebar tema claro */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 25%;
-    --sidebar-primary: 209 97% 51%;
+    --sidebar-primary: 0 72% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 15% 95%;
     --sidebar-accent-foreground: 0 0% 25%;
     --sidebar-border: 220 15% 90%;
-    --sidebar-ring: 209 97% 51%;
+    --sidebar-ring: 0 72% 45%;
     --sidebar-muted: 220 10% 55%;
   }
 
@@ -73,11 +72,11 @@
     --popover: 240 10% 7%;
     --popover-foreground: 0 0% 95%;
 
-    /* Paleta JetBrains no escuro */
-    --primary: 209 100% 56%;
+    /* Cor de Vinho - Wine Red no escuro */
+    --primary: 345 70% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 211 100% 42%;
-    --primary-glow: 209 100% 66%;
+    --primary-dark: 345 75% 25%;
+    --primary-glow: 345 65% 45%;
 
     --secondary: 240 10% 12%;
     --secondary-foreground: 0 0% 90%;
@@ -85,7 +84,7 @@
     --muted: 240 10% 14%;
     --muted-foreground: 240 5% 55%;
 
-    --accent: 27 97% 55%;
+    --accent: 0 72% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 55%;
@@ -93,7 +92,7 @@
 
     --border: 240 10% 15%;
     --input: 240 10% 10%;
-    --ring: 209 100% 56%;
+    --ring: 0 72% 50%;
 
     /* Glass effect dark */
     --glass-bg: 240 10% 10% / 0.6;
@@ -102,12 +101,12 @@
     /* Sidebar tema escuro */
     --sidebar-background: 240 10% 5%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 209 100% 56%;
+    --sidebar-primary: 0 72% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 10% 12%;
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 240 10% 12%;
-    --sidebar-ring: 209 100% 56%;
+    --sidebar-ring: 0 72% 50%;
     --sidebar-muted: 240 5% 50%;
   }
 }
