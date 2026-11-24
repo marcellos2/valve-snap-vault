@@ -232,7 +232,7 @@ const Diagnostico = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-20">
+    <div className="min-h-screen bg-background px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3 pt-2">
@@ -244,8 +244,8 @@ const Diagnostico = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">Diagnóstico do Sistema</h1>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-bold">Diagnóstico do Sistema</h1>
             <p className="text-xs text-muted-foreground">
               Verificação automática de conexão e configurações
             </p>

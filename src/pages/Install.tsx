@@ -66,7 +66,7 @@ const Install = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card border-b border-border p-4">
+      <header className="bg-card border-b border-border px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-4">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -81,7 +81,7 @@ const Install = () => {
       </header>
 
       {/* Content */}
-      <main className="flex-1 p-6 flex flex-col items-center justify-center">
+      <main className="flex-1 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 flex flex-col items-center justify-center">
         <div className="max-w-md w-full text-center space-y-8">
           {/* Logo */}
           <div className="flex justify-center">

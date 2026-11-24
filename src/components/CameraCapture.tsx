@@ -98,7 +98,7 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
           ) : (
             <>
               <img src={capturedImage} alt="Captured" className="w-full rounded-t-lg" />
-              <div className="flex gap-3 p-4 bg-card">
+              <div className="flex flex-col sm:flex-row gap-3 p-4 bg-card">
                 <Button
                   variant="outline"
                   onClick={handleRetake}

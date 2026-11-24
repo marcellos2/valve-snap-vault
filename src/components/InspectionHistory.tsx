@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { buildInspectionComposite, compositeFilename, enqueueComposite } from "@/lib/inspection-composite";
 import { fetchDriveImageFromText, isDriveFileReference, resolveDriveImageUrl } from "@/lib/upload-to-drive";
 import type { DateRange } from "react-day-picker";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 interface InspectionRecord {
@@ -261,6 +262,7 @@ export const InspectionHistory = ({
   onEditRecord?: (record: InspectionRecord) => void;
 }) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [filteredRecords, setFilteredRecords] = useState<InspectionRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -616,7 +618,7 @@ export const InspectionHistory = ({
                     }
                   }}
                   initialFocus
-                  numberOfMonths={2}
+                  numberOfMonths={isMobile ? 1 : 2}
                 />
               </PopoverContent>
             </Popover>

@@ -185,10 +185,10 @@ export const PhotoUploader = ({
                 <img
                   src={previewPhoto}
                   alt={title}
-                  className="w-full h-52 object-cover rounded-lg"
+                  className="w-full h-44 sm:h-52 object-cover rounded-lg"
                 />
               ) : (
-                <div className="w-full h-52 rounded-lg bg-muted flex items-center justify-center text-sm text-muted-foreground">
+                <div className="w-full h-44 sm:h-52 rounded-lg bg-muted flex items-center justify-center text-sm text-muted-foreground">
                   {previewError ? "Não foi possível carregar a foto" : "Carregando foto..."}
                 </div>
               )}
@@ -213,7 +213,7 @@ export const PhotoUploader = ({
             </div>
           ) : (
             <div 
-              className={`h-52 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all duration-300 cursor-pointer ${
+              className={`h-44 sm:h-52 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed transition-all duration-300 cursor-pointer ${
                 isDragging 
                   ? 'border-primary bg-primary/5 scale-[1.02]' 
                   : 'border-border hover:border-primary/50 hover:bg-muted/50'
@@ -244,31 +244,31 @@ export const PhotoUploader = ({
             </div>
           )}
 
-          <div className="flex gap-2 mt-3">
+          <div className="grid grid-cols-3 gap-2 mt-3">
             <Button
               onClick={() => setShowCamera(true)}
               size="sm"
-              className="flex-1 shadow-sm hover:shadow-md transition-shadow"
+              className="w-full min-w-0 h-14 flex-col gap-1 px-1.5 shadow-sm hover:shadow-md transition-shadow"
             >
-              <Camera className="h-4 w-4 mr-1.5" />
+              <Camera className="h-4 w-4" />
               Câmera
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 hover:bg-muted transition-colors"
+              className="w-full min-w-0 h-14 flex-col gap-1 px-1.5 hover:bg-muted transition-colors"
             >
-              <Upload className="h-4 w-4 mr-1.5" />
+              <Upload className="h-4 w-4" />
               Arquivo
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handlePasteButton}
-              className="flex-1 hover:bg-muted transition-colors"
+              className="w-full min-w-0 h-14 flex-col gap-1 px-1.5 hover:bg-muted transition-colors"
             >
-              <ClipboardPaste className="h-4 w-4 mr-1.5" />
+              <ClipboardPaste className="h-4 w-4" />
               {loadingDrive ? "Buscando..." : "Colar"}
             </Button>
           </div>

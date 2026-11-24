@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { loadInspectionsForYear } from "@/lib/inspections-repo";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { CheckCircle2, Clock, TrendingUp, Calendar, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MonthlyData {
   month: string;
@@ -19,7 +20,8 @@ const MONTHS = [
 ];
 
 export const InspectionReports = () => {
-  const [records, setRecords] = useState<any[]>([]);
+  const isMobile = useIsMobile();
+  const [records, setRecords] = useState<Array<{ inspection_date: string; status: string | null }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
@@ -110,7 +112,7 @@ export const InspectionReports = () => {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card className="p-4 border border-border bg-card text-center">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -125,7 +127,7 @@ export const InspectionReports = () => {
           <p className="text-2xl font-bold text-success">{totals.concluido}</p>
           <p className="text-[10px] text-muted-foreground font-medium">Concluídas</p>
         </Card>
-        <Card className="p-4 border border-border bg-card text-center">
+        <Card className="col-span-2 p-4 border border-border bg-card text-center sm:col-span-1">
           <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center mx-auto mb-2">
             <Clock className="w-5 h-5 text-warning" />
           </div>
@@ -174,10 +176,10 @@ export const InspectionReports = () => {
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
-                outerRadius={90}
+                outerRadius="70%"
                 paddingAngle={5}
                 dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={!isMobile && (({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`)}
               >
                 {pieData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index]} />

@@ -10,7 +10,7 @@ export const OfflineIndicator = () => {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-fade-in">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 animate-fade-in md:bottom-4 md:left-auto md:right-4">
       {!isOnline ? (
         <div className="bg-destructive text-destructive-foreground px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
           <WifiOff className="w-4 h-4" />

@@ -42,7 +42,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
       </div>
 
       {/* Header */}
-      <header className="relative z-20">
+      <header className="relative z-20 pt-[env(safe-area-inset-top)]">
         {/* Curved background */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-[hsl(345,80%,15%)]">
@@ -133,10 +133,10 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 px-4 -mt-2 pb-28">
+      <main className="relative z-10 min-w-0 px-4 -mt-2 pb-[calc(7rem+env(safe-area-inset-bottom))]">
         {/* Quick actions - only on inspection tab */}
         {activeTab === "inspection" && (
-          <div className="grid grid-cols-2 gap-3 mb-6 stagger-children">
+          <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6 stagger-children">
             {menuItems.map((item) => (
               <button
                 key={item.value}
@@ -190,7 +190,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
 
       {/* Bottom Navigation - Glass effect */}
       <nav className="fixed bottom-0 left-0 right-0 z-50">
-        <div className="mx-3 mb-3 sm:mx-auto sm:max-w-md">
+        <div className="mx-3 mb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:mx-auto sm:max-w-md">
           <div className="glass-card rounded-2xl px-2 py-2 shadow-xl shadow-black/10">
             <div className="flex items-center justify-around">
               {menuItems.map((item) => (
@@ -232,7 +232,7 @@ export const AppLayoutV2 = ({ children, activeTab, onTabChange, title }: AppLayo
         <button
           onClick={() => onTabChange("inspection")}
           className={cn(
-            "fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full",
+            "fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-50 w-14 h-14 rounded-full",
             "bg-gradient-to-br from-primary to-primary-dark text-white",
             "shadow-lg shadow-primary/40 hover:shadow-xl hover:shadow-primary/50",
             "flex items-center justify-center",
