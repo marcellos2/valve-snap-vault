@@ -46,9 +46,13 @@ export const useOfflineSync = () => {
   }, []);
 
 
-  const uploadPhoto = async (photoData: string, fileName: string): Promise<string | null> => {
+  const uploadPhoto = async (
+    photoData: string,
+    fileName: string,
+    idempotencyKey: string,
+  ): Promise<string | null> => {
     if (!photoData) return null;
-    return uploadPhotoWithRetry(photoData, fileName);
+    return uploadPhotoWithRetry(photoData, fileName, { idempotencyKey });
   };
 
   const syncPendingData = useCallback(async () => {
@@ -77,13 +81,13 @@ export const useOfflineSync = () => {
         try {
           await markLocalInspectionStatus(record.id, 'syncing');
           const photoInitial = record.photo_initial_url?.startsWith('data:')
-            ? await uploadPhoto(record.photo_initial_url, 'initial')
+            ? await uploadPhoto(record.photo_initial_url, 'initial', `${record.id}:initial`)
             : record.photo_initial_url;
           const photoDuring = record.photo_during_url?.startsWith('data:')
-            ? await uploadPhoto(record.photo_during_url, 'during')
+            ? await uploadPhoto(record.photo_during_url, 'during', `${record.id}:during`)
             : record.photo_during_url;
           const photoFinal = record.photo_final_url?.startsWith('data:')
-            ? await uploadPhoto(record.photo_final_url, 'final')
+            ? await uploadPhoto(record.photo_final_url, 'final', `${record.id}:final`)
             : record.photo_final_url;
 
           const { error } = await supabase.from("inspection_records").insert({
@@ -146,17 +150,17 @@ export const useOfflineSync = () => {
 
           if (inspection.photoInitial) {
             photoInitialUrl = inspection.photoInitial.startsWith('data:')
-              ? await uploadPhoto(inspection.photoInitial, 'initial')
+              ? await uploadPhoto(inspection.photoInitial, 'initial', `${inspection.id}:initial`)
               : inspection.photoInitial;
           }
           if (inspection.photoDuring) {
             photoDuringUrl = inspection.photoDuring.startsWith('data:')
-              ? await uploadPhoto(inspection.photoDuring, 'during')
+              ? await uploadPhoto(inspection.photoDuring, 'during', `${inspection.id}:during`)
               : inspection.photoDuring;
           }
           if (inspection.photoFinal) {
             photoFinalUrl = inspection.photoFinal.startsWith('data:')
-              ? await uploadPhoto(inspection.photoFinal, 'final')
+              ? await uploadPhoto(inspection.photoFinal, 'final', `${inspection.id}:final`)
               : inspection.photoFinal;
           }
 

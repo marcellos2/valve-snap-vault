@@ -1,9 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Camera, Upload, RotateCw, X, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CameraCapture } from "./CameraCapture";
-import { fetchDriveImageFromText } from "@/lib/upload-to-drive";
+import {
+  fetchDriveImageFromText,
+  isDriveFileReference,
+  resolveDriveImageUrl,
+} from "@/lib/upload-to-drive";
 
 interface PhotoUploaderProps {
   title: string;
@@ -24,7 +28,38 @@ export const PhotoUploader = ({
 }: PhotoUploaderProps) => {
   const [showCamera, setShowCamera] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(photo);
+  const [previewError, setPreviewError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let releasePreview: () => void = () => {};
+    setPreviewError(false);
+
+    if (!photo) {
+      setPreviewPhoto(null);
+      return;
+    }
+    setPreviewPhoto(null);
+    void resolveDriveImageUrl(photo)
+      .then((preview) => {
+        if (cancelled) {
+          preview.revoke();
+          return;
+        }
+        releasePreview = preview.revoke;
+        setPreviewPhoto(preview.url);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewError(true);
+      });
+
+    return () => {
+      cancelled = true;
+      releasePreview();
+    };
+  }, [photo]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,11 +181,17 @@ export const PhotoUploader = ({
         <div className="p-4 bg-card">
           {photo ? (
             <div className="relative">
-              <img
-                src={photo}
-                alt={title}
-                className="w-full h-52 object-cover rounded-lg"
-              />
+              {previewPhoto ? (
+                <img
+                  src={previewPhoto}
+                  alt={title}
+                  className="w-full h-52 object-cover rounded-lg"
+                />
+              ) : (
+                <div className="w-full h-52 rounded-lg bg-muted flex items-center justify-center text-sm text-muted-foreground">
+                  {previewError ? "Não foi possível carregar a foto" : "Carregando foto..."}
+                </div>
+              )}
               <div className="absolute top-2 right-2 flex gap-1.5">
                 <Button
                   size="icon"

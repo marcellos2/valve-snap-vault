@@ -1,4 +1,7 @@
-project_id = "iacyuixhhgejwnjjkezz"
+project_id = "uiistdrgvzdivylujpqv"
 
 [functions.keep-alive]
+verify_jwt = false
+
+[functions.drive-api]
 verify_jwt = false

@@ -1,3 +1,5 @@
+import { resolveDriveImageUrl } from "./upload-to-drive";
+
 export interface CompositeRecord {
   valve_code: string | null;
   inspection_date: string;
@@ -6,19 +8,25 @@ export interface CompositeRecord {
   photo_final_url: string | null;
 }
 
-const loadImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = (error) => {
-      const fallback = new Image();
-      fallback.onload = () => resolve(fallback);
-      fallback.onerror = () => reject(error);
-      fallback.src = url;
-    };
-    img.src = url;
-  });
+const loadImage = async (url: string): Promise<HTMLImageElement> => {
+  const imageSource = await resolveDriveImageUrl(url);
+  try {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      if (!imageSource.url.startsWith("blob:")) img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = (error) => {
+        const fallback = new Image();
+        fallback.onload = () => resolve(fallback);
+        fallback.onerror = () => reject(error);
+        fallback.src = imageSource.url;
+      };
+      img.src = imageSource.url;
+    });
+  } finally {
+    imageSource.revoke();
+  }
+};
 
 export const compositeFilename = (record: CompositeRecord) => {
   const date = new Date(record.inspection_date);

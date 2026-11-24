@@ -75,8 +75,7 @@ export const loadInspectionHistory = async (filters: HistoryFilters): Promise<Hi
     try {
       const { data, error } = await supabase
         .from("inspection_records")
-        .select("photo_final_url")
-        .like("photo_final_url", "https://lh3.googleusercontent.com/d/%");
+        .select("photo_final_url");
       if (error) throw error;
       driveUrlsInDb = new Set((data || []).map((r: { photo_final_url: string | null }) => r.photo_final_url || ""));
     } catch (error) {

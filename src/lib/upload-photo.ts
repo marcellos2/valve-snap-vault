@@ -1,6 +1,5 @@
-import { supabase } from "@/integrations/external-supabase/client";
-import { getGoogleDriveSessionStatus, hasGoogleDriveSession, uploadBlobToDrive } from "./upload-to-drive";
-import { isBackendDown, isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
+import { createDriveUploadKey, DriveFunctionError, uploadBlobToDrive } from "./upload-to-drive";
+import { isNetworkFailure, markBackendDown, markBackendUp } from "./backend-status";
 
 /**
  * Compress a base64 image to reduce upload size on slow networks (4G/cellular).
@@ -106,21 +105,14 @@ const compressForNetwork = async (dataUrl: string, profile: NetworkProfile): Pro
   return lastBlob;
 };
 
-const createUploadPath = (fileName: string) => {
-  const uniqueId = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).substring(2, 10);
-
-  return `${Date.now()}-${uniqueId}-${fileName}.jpg`;
-};
-
 interface UploadOptions {
   maxAttempts?: number;
+  idempotencyKey?: string;
   onProgress?: (info: { attempt: number; maxAttempts: number; phase: "compressing" | "uploading" | "retrying" }) => void;
 }
 
 /**
- * Upload a base64 photo to Supabase Storage with automatic compression and retry.
+ * Upload a base64 photo to the company's Drive through the Edge Function.
  * Designed for unstable mobile networks (4G/cellular) where requests often time out.
  */
 export const uploadPhotoWithRetry = async (
@@ -128,7 +120,7 @@ export const uploadPhotoWithRetry = async (
   fileName: string,
   options: UploadOptions = {}
 ): Promise<string | null> => {
-  const { maxAttempts, onProgress } = options;
+  const { maxAttempts, idempotencyKey, onProgress } = options;
   const profile = getNetworkProfile(maxAttempts);
 
   if (!photoData || !photoData.startsWith("data:")) {
@@ -150,38 +142,9 @@ export const uploadPhotoWithRetry = async (
     blob = new Blob([arr], { type: "image/jpeg" });
   }
 
-  // If user is logged into Google (same session as Google Photos), upload
-  // directly to their Google Drive "Inspeções Válvulas" folder instead of backend storage.
-  if (hasGoogleDriveSession()) {
-    try {
-      onProgress?.({ attempt: 1, maxAttempts: profile.attempts, phase: "uploading" });
-      const driveName = `${Date.now()}-${fileName}.jpg`;
-      const driveUrl = await uploadBlobToDrive(blob, driveName);
-      if (driveUrl) return driveUrl;
-    } catch (err) {
-      console.error("Google Drive upload failed:", err);
-      throw err instanceof Error ? err : new Error("Falha ao enviar foto para o Google Drive.");
-    }
-  } else {
-    const driveStatus = getGoogleDriveSessionStatus();
-    if (driveStatus.connected) {
-      throw new Error(
-        driveStatus.reason === "expired"
-          ? "Sua sessão do Google expirou. Entre novamente no Google Photos Sync antes de salvar."
-          : "Entre novamente no Google Photos Sync para autorizar o envio ao Google Drive."
-      );
-    }
-  }
-
-  // Backend recently unreachable (paused project / no network): don't waste
-  // time on long retry loops, keep the photo locally instead.
-  if (isBackendDown()) {
-    console.warn(`Backend indisponível, mantendo ${fileName} localmente.`);
-    return null;
-  }
-
+  const driveName = `${Date.now()}-${fileName}.jpg`;
+  const uploadKey = await createDriveUploadKey(blob, idempotencyKey || fileName);
   let lastError: unknown = null;
-  const filePath = createUploadPath(fileName);
 
   for (let attempt = 1; attempt <= profile.attempts; attempt++) {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -193,11 +156,7 @@ export const uploadPhotoWithRetry = async (
         phase: attempt === 1 ? "uploading" : "retrying",
       });
 
-      const uploadPromise = supabase.storage.from("valve-photos").upload(filePath, blob, {
-        cacheControl: "3600",
-        upsert: attempt > 1,
-        contentType: "image/jpeg",
-      });
+      const uploadPromise = uploadBlobToDrive(blob, driveName, uploadKey);
 
       const timeoutPromise = new Promise<never>((_, reject) =>
         timeoutId = setTimeout(
@@ -206,17 +165,21 @@ export const uploadPhotoWithRetry = async (
         )
       );
 
-      const { error } = (await Promise.race([uploadPromise, timeoutPromise])) as Awaited<typeof uploadPromise>;
+      const driveUrl = await Promise.race([uploadPromise, timeoutPromise]);
       if (timeoutId) clearTimeout(timeoutId);
 
-      if (error) throw error;
-
-      const { data } = supabase.storage.from("valve-photos").getPublicUrl(filePath);
       markBackendUp();
-      return data.publicUrl;
+      return driveUrl;
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
       lastError = err;
+
+      if (
+        err instanceof DriveFunctionError &&
+        ["drive_not_configured", "drive_reauthorization_required", "drive_folder_unavailable", "drive_folder_invalid"].includes(err.code)
+      ) {
+        throw err;
+      }
 
       // Network-level failure means the backend is unreachable: stop retrying.
       if (isNetworkFailure(err)) {
@@ -235,7 +198,8 @@ export const uploadPhotoWithRetry = async (
         if (smallerBlob.size < blob.size) {
           blob = smallerBlob;
         }
-      } catch {
+      } catch (compressionError) {
+        console.warn("Não foi possível comprimir a imagem para a nova tentativa:", compressionError);
       }
 
       console.warn(`Upload attempt ${attempt}/${profile.attempts} failed for ${fileName}:`, err);

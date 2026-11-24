@@ -1,255 +1,17 @@
-import { refreshGoogleSessionIfNeeded } from "./google-session-refresh";
-const STORAGE_KEY = "google_photos_session_v1";
-const FOLDER_NAME = "Inspeções Válvulas";
-const TARGET_FOLDER_ID = "1sF5lBToqmm5K2ehXvkPfvXUYv9QrsDii";
-let cachedFolderId: string | null = null;
+import {
+  FUNCTIONS_SUPABASE_PUBLISHABLE_KEY,
+  FUNCTIONS_SUPABASE_URL,
+} from "@/integrations/external-supabase/functions-config";
 
-type GoogleSession = {
-  access_token: string;
-  refresh_token: string | null;
-  expires_at: number;
-  scope?: string;
-};
+const DRIVE_API_FUNCTION = `${FUNCTIONS_SUPABASE_URL}/functions/v1/drive-api`;
+const DRIVE_FILE_PREFIX = "drive-file:";
+let driveCache: { at: number; records: DriveInspectionRecord[] } | null = null;
 
-type GoogleDriveSessionStatus = {
-  connected: boolean;
-  canUpload: boolean;
-  reason: "ready" | "missing_session" | "expired" | "missing_drive_scope" | "invalid_session";
-  scope?: string;
-};
-
-function readStoredSession(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function hasDriveUploadScope(scope?: string): boolean {
-  if (!scope) return false;
-  const scopes = scope.split(/\s+/).filter(Boolean);
-  return scopes.some((s) =>
-    s === "https://www.googleapis.com/auth/drive" ||
-    s === "https://www.googleapis.com/auth/drive.file" ||
-    s.endsWith("/auth/drive") ||
-    s.endsWith("/auth/drive.file")
-  );
-}
-
-function getSession(): GoogleSession | null {
-  const status = getGoogleDriveSessionStatus();
-  if (!status.canUpload) return null;
-
-  try {
-    const raw = readStoredSession();
-    if (!raw) return null;
-    return JSON.parse(raw) as GoogleSession;
-  } catch {
-    return null;
-  }
-}
-
-export function getGoogleDriveSessionStatus(): GoogleDriveSessionStatus {
-  try {
-    const raw = readStoredSession();
-    if (!raw) return { connected: false, canUpload: false, reason: "missing_session" };
-
-    const s = JSON.parse(raw) as GoogleSession;
-    if (!s.access_token) return { connected: false, canUpload: false, reason: "invalid_session" };
-    if (s.expires_at && s.expires_at < Date.now()) {
-      return { connected: true, canUpload: false, reason: "expired", scope: s.scope };
-    }
-    if (!hasDriveUploadScope(s.scope)) {
-      return { connected: true, canUpload: false, reason: "missing_drive_scope", scope: s.scope };
-    }
-
-    return { connected: true, canUpload: true, reason: "ready", scope: s.scope };
-  } catch {
-    return { connected: false, canUpload: false, reason: "invalid_session" };
-  }
-}
-
-export function hasGoogleDriveSession(): boolean {
-  return getGoogleDriveSessionStatus().canUpload;
-}
-
-async function ensureFolder(token: string): Promise<string> {
-  if (cachedFolderId) return cachedFolderId;
-
-  if (TARGET_FOLDER_ID) {
-    const folderRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${TARGET_FOLDER_ID}?fields=id,name,mimeType,capabilities(canAddChildren)&supportsAllDrives=true`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (!folderRes.ok) {
-      const detail = await folderRes.text().catch(() => "");
-      throw new Error(
-        `Não consegui acessar a pasta do Drive (${folderRes.status}). Saia e conecte novamente para autorizar o Google Drive. ${detail.slice(0, 160)}`
-      );
-    }
-
-    const folder = await folderRes.json();
-    if (folder.mimeType !== "application/vnd.google-apps.folder") {
-      throw new Error("O link configurado do Google Drive não aponta para uma pasta.");
-    }
-    if (folder.capabilities && folder.capabilities.canAddChildren === false) {
-      throw new Error("A conta Google conectada não tem permissão para adicionar arquivos nessa pasta do Drive.");
-    }
-
-    cachedFolderId = folder.id as string;
-    return cachedFolderId;
-  }
-
-  const q = encodeURIComponent(
-    `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
-  );
-  const searchRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&spaces=drive`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!searchRes.ok) throw new Error(`drive_search_${searchRes.status}`);
-  const searchData = await searchRes.json();
-  if (searchData.files && searchData.files.length > 0) {
-    cachedFolderId = searchData.files[0].id as string;
-    return cachedFolderId;
-  }
-  const createRes = await fetch("https://www.googleapis.com/drive/v3/files", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: FOLDER_NAME,
-      mimeType: "application/vnd.google-apps.folder",
-    }),
-  });
-  if (!createRes.ok) throw new Error(`drive_folder_create_${createRes.status}`);
-  const data = await createRes.json();
-  cachedFolderId = data.id as string;
-  return cachedFolderId;
-}
-
-/** Pasta "fotosval" onde ficam as folhas finais (3 fotos em uma). */
-export const COMPOSITE_FOLDER_ID = "1NfGlaHkQxqGSv4VhImPXksYiYtJa6BUy";
-
-export async function uploadBlobToDrive(
-  blob: Blob,
-  filename: string,
-  folderOverride?: string
-): Promise<string | null> {
-  const session = getSession();
-  if (!session) return null;
-  const token = session.access_token;
-
-  const folderId = folderOverride || (await ensureFolder(token));
-
-  const metadata = { name: filename, parents: [folderId] };
-  const boundary = "lovable_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-  const enc = new TextEncoder();
-  const metaPart = enc.encode(
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`
-  );
-  const dataHeader = enc.encode(
-    `--${boundary}\r\nContent-Type: ${blob.type || "image/jpeg"}\r\n\r\n`
-  );
-  const closeDelim = enc.encode(`\r\n--${boundary}--`);
-  const bodyBlob = new Blob([metaPart, dataHeader, blob, closeDelim]);
-
-  const uploadRes = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": `multipart/related; boundary=${boundary}`,
-      },
-      body: bodyBlob,
-    }
-  );
-  if (!uploadRes.ok) {
-    const detail = await uploadRes.text().catch(() => "");
-    throw new Error(`drive_upload_${uploadRes.status}: ${detail.slice(0, 200)}`);
-  }
-  const uploaded = await uploadRes.json();
-  const fileId = uploaded.id as string;
-
-  // Make file readable by anyone with the link so <img src> works in the app history.
-  const permissionRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ role: "reader", type: "anyone" }),
-    }
-  ).catch(() => null);
-
-  if (permissionRes && !permissionRes.ok) {
-    console.warn("Google Drive permission update failed:", await permissionRes.text().catch(() => ""));
-  }
-
-  return `https://lh3.googleusercontent.com/d/${fileId}=w2000`;
-}
-/** Extrai ID de arquivo de um link do Google Drive. */
-export function extractDriveFileId(text: string): string | null {
-  const t = text.trim();
-  const m =
-    t.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/) ||
-    t.match(/[?&]id=([a-zA-Z0-9_-]{10,})/) ||
-    t.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-  return m ? m[1] : null;
-}
-
-/**
- * Busca a imagem no Drive a partir de um link (ou nome de arquivo) copiado.
- * Usa a conta Google conectada no app.
- */
-export async function fetchDriveImageFromText(text: string): Promise<Blob> {
-  await refreshGoogleSessionIfNeeded();
-  const raw = readStoredSession();
-  if (!raw) throw new Error("Conecte sua conta Google (menu Google Photos/Drive) para colar fotos do Drive.");
-  const s = JSON.parse(raw) as GoogleSession;
-  if (!s.access_token || (s.expires_at && s.expires_at < Date.now())) {
-    throw new Error("Login do Google expirou. Reconecte a conta Google e tente novamente.");
-  }
-  const headers = { Authorization: `Bearer ${s.access_token}` };
-  let fileId = extractDriveFileId(text);
-
-  if (!fileId) {
-    // Pode ter vindo só o nome do arquivo (ex.: IMG_20260830_085948.jpg)
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const name = lines.find((l) => /\.(jpe?g|png|heic|webp|gif)$/i.test(l)) || lines[0];
-    if (!name || name.length > 200) throw new Error("Não reconheci um link ou nome de foto do Drive.");
-    const q = `name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and trashed = false`;
-    const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true`,
-      { headers },
-    );
-    if (!r.ok) throw new Error(`Erro ao buscar no Drive (${r.status}).`);
-    const data = await r.json();
-    fileId = data.files?.[0]?.id ?? null;
-    if (!fileId) throw new Error(`Foto "${name}" não encontrada no Drive.`);
-  }
-
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`,
-    { headers },
-  );
-  if (!res.ok) {
-    if (res.status === 401) throw new Error("Login do Google expirou. Reconecte a conta Google.");
-    if (res.status === 403 || res.status === 404) throw new Error("Sem acesso a essa foto com a conta conectada.");
-    throw new Error(`Erro ao baixar do Drive (${res.status}).`);
-  }
-  const blob = await res.blob();
-  if (!blob.type.startsWith("image/") && blob.type !== "application/octet-stream") {
-    throw new Error("O arquivo copiado não é uma imagem.");
-  }
-  return blob;
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  createdTime?: string;
 }
 
 export interface DriveInspectionRecord {
@@ -263,60 +25,155 @@ export interface DriveInspectionRecord {
   status: "concluido";
 }
 
-let driveCache: { at: number; records: DriveInspectionRecord[] } | null = null;
+export class DriveFunctionError extends Error {
+  constructor(readonly code: string, message: string) {
+    super(message);
+    this.name = "DriveFunctionError";
+  }
+}
 
-/** Lista as folhas salvas na pasta fotosval e converte em registros do histórico. */
+export function isDriveFileReference(value: string): boolean {
+  return value.startsWith(DRIVE_FILE_PREFIX);
+}
+
+export async function resolveDriveImageUrl(value: string): Promise<{ url: string; revoke: () => void }> {
+  if (!isDriveFileReference(value)) return { url: value, revoke: () => undefined };
+  const url = URL.createObjectURL(await fetchDriveImageFromText(value));
+  return { url, revoke: () => URL.revokeObjectURL(url) };
+}
+
+function getDriveFileId(reference: string): string {
+  return reference.slice(DRIVE_FILE_PREFIX.length);
+}
+
+function driveUrl(action: string, params: Record<string, string> = {}) {
+  const url = new URL(DRIVE_API_FUNCTION);
+  url.searchParams.set("action", action);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  return url.toString();
+}
+
+async function requestDriveJson<T>(
+  action: string,
+  init: RequestInit = {},
+  params: Record<string, string> = {},
+): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("apikey", FUNCTIONS_SUPABASE_PUBLISHABLE_KEY);
+  headers.set("Authorization", `Bearer ${FUNCTIONS_SUPABASE_PUBLISHABLE_KEY}`);
+  const response = await fetch(driveUrl(action, params), { ...init, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new DriveFunctionError(
+      typeof data?.error === "string" ? data.error : "drive_request_failed",
+      typeof data?.message === "string" ? data.message : `Falha ao acessar o Drive (${response.status}).`,
+    );
+  }
+  return data as T;
+}
+
+/** Envia uma imagem ao Drive pela Edge Function, sem expor tokens Google no navegador. */
+export async function createDriveUploadKey(blob: Blob, operation: string): Promise<string> {
+  const content = await new Blob([operation, "\0", blob]).arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", content);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function uploadBlobToDrive(
+  blob: Blob,
+  filename: string,
+  idempotencyKey?: string,
+): Promise<string> {
+  const form = new FormData();
+  form.append("file", blob, filename);
+  form.append("filename", filename);
+  form.append("uploadKey", idempotencyKey || await createDriveUploadKey(blob, filename));
+  const result = await requestDriveJson<{ id: string }>("upload", { method: "POST", body: form });
+  if (!result.id) throw new Error("O Drive não retornou o identificador do arquivo.");
+  driveCache = null;
+  return `${DRIVE_FILE_PREFIX}${result.id}`;
+}
+
+/** Extrai o ID de arquivo de um link do Google Drive. */
+export function extractDriveFileId(text: string): string | null {
+  const t = text.trim();
+  const m =
+    t.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/) ||
+    t.match(/[?&]id=([a-zA-Z0-9_-]{10,})/) ||
+    t.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  return m ? m[1] : null;
+}
+
+/** Baixa uma imagem da pasta configurada por meio da Edge Function. */
+export async function fetchDriveImageFromText(text: string): Promise<Blob> {
+  const trimmed = text.trim();
+  let fileId = isDriveFileReference(trimmed) ? getDriveFileId(trimmed) : extractDriveFileId(trimmed);
+
+  if (!fileId) {
+    const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const filename = lines.find((line) => /\.(jpe?g|png|heic|webp|gif)$/i.test(line)) || lines[0];
+    if (!filename || filename.length > 200) {
+      throw new Error("Não reconheci um link ou nome de foto do Drive.");
+    }
+    const result = await requestDriveJson<{ files: DriveFile[] }>(
+      "list",
+      {},
+      { name: filename },
+    );
+    fileId = result.files?.[0]?.id ?? null;
+    if (!fileId) throw new Error(`Foto "${filename}" não encontrada na pasta do app.`);
+  }
+
+  const headers = new Headers({
+    apikey: FUNCTIONS_SUPABASE_PUBLISHABLE_KEY,
+    Authorization: `Bearer ${FUNCTIONS_SUPABASE_PUBLISHABLE_KEY}`,
+  });
+  const response = await fetch(driveUrl("read", { id: fileId }), { headers });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new DriveFunctionError(
+      typeof data?.error === "string" ? data.error : "drive_read_failed",
+      typeof data?.message === "string" ? data.message : `Falha ao baixar a foto do Drive (${response.status}).`,
+    );
+  }
+  const blob = await response.blob();
+  if (!blob.type.startsWith("image/")) throw new Error("O arquivo copiado não é uma imagem.");
+  return blob;
+}
+
+/** Lista folhas de inspeção gravadas na pasta e converte em registros do histórico. */
 export async function listDriveInspections(force = false): Promise<DriveInspectionRecord[]> {
   if (!force && driveCache && Date.now() - driveCache.at < 60_000) return driveCache.records;
-  await refreshGoogleSessionIfNeeded();
-  const raw = readStoredSession();
-  if (!raw) return [];
-  const s = JSON.parse(raw) as GoogleSession;
-  if (!s.access_token) return [];
-  const headers = { Authorization: `Bearer ${s.access_token}` };
-  const q = `'${COMPOSITE_FOLDER_ID}' in parents and trashed = false and mimeType contains 'image/'`;
-  const out: DriveInspectionRecord[] = [];
-  let pageToken = "";
-  for (let i = 0; i < 20; i++) {
-    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,createdTime)&orderBy=createdTime desc&pageSize=1000&supportsAllDrives=true&includeItemsFromAllDrives=true${pageToken ? `&pageToken=${pageToken}` : ""}`;
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
-      if (res.status === 401) await refreshGoogleSessionIfNeeded(true);
-      break;
-    }
-    const data = await res.json();
-    for (const f of data.files || []) {
-      const m = String(f.name).match(/^inspecao-(.+)-(\d{2})-(\d{2})-(\d{4})\.\w+$/i);
-      const code = m ? m[1] : String(f.name).replace(/\.\w+$/, "");
-      const img = `https://lh3.googleusercontent.com/d/${f.id}=w2000`;
-      out.push({
-        id: `drive-${f.id}`,
+  const result = await requestDriveJson<{ files: DriveFile[] }>("list");
+  const records = (result.files || [])
+    .filter((file) => file.mimeType.startsWith("image/") && /^inspecao-/i.test(file.name))
+    .map((file) => {
+      const match = file.name.match(/^inspecao-(.+)-(\d{2})-(\d{2})-(\d{4})\.\w+$/i);
+      const code = match ? match[1] : file.name.replace(/\.\w+$/, "");
+      const image = `${DRIVE_FILE_PREFIX}${file.id}`;
+      return {
+        id: `drive-${file.id}`,
         valve_code: code === "sem-codigo" ? null : code,
-        inspection_date: f.createdTime,
-        photo_initial_url: img,
-        photo_during_url: img,
-        photo_final_url: img,
+        inspection_date: file.createdTime || new Date().toISOString(),
+        photo_initial_url: image,
+        photo_during_url: image,
+        photo_final_url: image,
         notes: null,
-        status: "concluido",
-      });
-    }
-    if (!data.nextPageToken) break;
-    pageToken = data.nextPageToken;
-  }
-  driveCache = { at: Date.now(), records: out };
-  return out;
+        status: "concluido" as const,
+      };
+    });
+  driveCache = { at: Date.now(), records };
+  return records;
 }
 
 export async function trashDriveFile(fileId: string): Promise<void> {
-  await refreshGoogleSessionIfNeeded();
-  const raw = readStoredSession();
-  if (!raw) throw new Error("Conecte a conta Google para excluir.");
-  const s = JSON.parse(raw) as GoogleSession;
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${s.access_token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ trashed: true }),
-  });
-  if (!res.ok) throw new Error(`Erro ao excluir no Drive (${res.status}).`);
+  await requestDriveJson<{ ok: boolean }>(
+    "delete",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: fileId }),
+    },
+  );
   driveCache = null;
 }

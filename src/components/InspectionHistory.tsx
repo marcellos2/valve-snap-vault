@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildInspectionComposite, compositeFilename, enqueueComposite } from "@/lib/inspection-composite";
+import { fetchDriveImageFromText, isDriveFileReference, resolveDriveImageUrl } from "@/lib/upload-to-drive";
+import type { DateRange } from "react-day-picker";
 
 
 interface InspectionRecord {
@@ -43,51 +45,6 @@ const formatDateForFilename = (dateString: string): string => {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
-// Optimized image component with intersection observer
-const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!imgRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "100px" }
-    );
-
-    observer.observe(imgRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={imgRef} className={cn("relative overflow-hidden", className)}>
-      {!isLoaded && (
-        <div className="absolute inset-0 bg-muted animate-pulse" />
-      )}
-      {isInView && (
-        <img
-          src={src}
-          alt={alt}
-          className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setIsLoaded(true)}
-          loading="lazy"
-          decoding="async"
-        />
-      )}
-    </div>
-  );
-};
-
 // Composite sheet: the 3 photos + titles rendered as ONE draggable image
 const CompositeSheet = ({ record }: { record: InspectionRecord }) => {
   const [url, setUrl] = useState<string | null>(null);
@@ -95,18 +52,38 @@ const CompositeSheet = ({ record }: { record: InspectionRecord }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setUrl(null);
+    setFailed(false);
+
     // Folha já pronta salva no Drive: as 3 URLs apontam para a mesma imagem.
     if (
       record.photo_initial_url &&
       record.photo_initial_url === record.photo_during_url &&
       record.photo_initial_url === record.photo_final_url
     ) {
-      setUrl(record.photo_initial_url);
-      return;
+      if (record.photo_initial_url) {
+        void resolveDriveImageUrl(record.photo_initial_url)
+          .then((image) => {
+            if (cancelled) {
+              image.revoke();
+              return;
+            }
+            objectUrl = image.url.startsWith("blob:") ? image.url : null;
+            setUrl(image.url);
+            if (!objectUrl) image.revoke();
+          })
+          .catch(() => !cancelled && setFailed(true));
+      } else {
+        setFailed(true);
+      }
+      return () => {
+        cancelled = true;
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+      };
     }
     if (!containerRef.current) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -390,19 +367,24 @@ export const InspectionHistory = ({
   };
 
 
-  const loadImage = (url: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
+  const loadImage = async (url: string): Promise<HTMLImageElement> => {
+    const imageSource = await resolveDriveImageUrl(url);
+    try {
+      return await new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = "anonymous";
+      if (!imageSource.url.startsWith("blob:")) img.crossOrigin = "anonymous";
       img.onload = () => resolve(img);
       img.onerror = (error) => {
         const img2 = new Image();
         img2.onload = () => resolve(img2);
         img2.onerror = () => reject(error);
-        img2.src = url;
+        img2.src = imageSource.url;
       };
-      img.src = url;
+      img.src = imageSource.url;
     });
+    } finally {
+      imageSource.revoke();
+    }
   };
 
   const handleDownload = async (record: InspectionRecord) => {
@@ -628,7 +610,7 @@ export const InspectionHistory = ({
                 <CalendarComponent
                   mode="range"
                   selected={dateRange}
-                  onSelect={(range: any) => {
+                  onSelect={(range: DateRange | undefined) => {
                     if (range) {
                       setDateRange(range);
                     }

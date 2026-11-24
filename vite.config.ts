@@ -45,11 +45,11 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/hblmmmcdafnwhzyweeym\.supabase\.co\/functions\/v1\/.*/i,
+            urlPattern: /^https:\/\/uiistdrgvzdivylujpqv\.supabase\.co\/functions\/v1\/.*/i,
             handler: "NetworkOnly"
           },
           {
-            urlPattern: /^https:\/\/hblmmmcdafnwhzyweeym\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/uiistdrgvzdivylujpqv\.supabase\.co\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-cache",

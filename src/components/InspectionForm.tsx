@@ -10,8 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { uploadPhotoWithRetry } from "@/lib/upload-photo";
 import { saveInspection } from "@/lib/inspections-repo";
-import { hasGoogleDriveSession, uploadBlobToDrive, COMPOSITE_FOLDER_ID } from "@/lib/upload-to-drive";
-import { refreshGoogleSessionIfNeeded } from "@/lib/google-session-refresh";
+import { fetchDriveImageFromText, isDriveFileReference, uploadBlobToDrive } from "@/lib/upload-to-drive";
 import { buildInspectionComposite, compositeFilename } from "@/lib/inspection-composite";
 import Tesseract from "tesseract.js";
 
@@ -117,8 +116,12 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
     const photo = photoMap[type];
     if (!photo) return;
 
+    let resolvedImageUrl: string | null = null;
     try {
-      const rotated = await rotatePhoto(photo, rotations[type]);
+      const source = isDriveFileReference(photo)
+        ? (resolvedImageUrl = URL.createObjectURL(await fetchDriveImageFromText(photo)))
+        : photo;
+      const rotated = await rotatePhoto(source, rotations[type]);
       setRotations((prev) => ({ ...prev, [type]: (prev[type] + 90) % 360 }));
 
       if (type === "initial") setPhotoInitial(rotated);
@@ -132,6 +135,8 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
         description: "Não foi possível rotacionar a foto. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      if (resolvedImageUrl) URL.revokeObjectURL(resolvedImageUrl);
     }
   };
 
@@ -190,19 +195,13 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       setRotations({ initial: 0, during: 0, final: 0 });
     };
 
-    // Try to upload each photo; if the upload fails, keep the local image data
-    // so the inspection can still be stored locally and synced later.
     const resolvePhoto = async (photo: string | null, name: string) => {
       if (!photo) return null;
       if (!photo.startsWith("data:")) return photo;
       if (!isOnline) return photo;
-      try {
-        const url = await uploadPhoto(photo, name);
-        return url || photo;
-      } catch (err) {
-        console.warn(`Upload de ${name} falhou, mantendo foto local:`, err);
-        return photo;
-      }
+      const url = await uploadPhoto(photo, name);
+      if (!url) throw new Error(`Não foi possível enviar a foto ${name} para o Google Drive.`);
+      return url;
     };
 
     try {
@@ -210,32 +209,20 @@ export const InspectionForm = ({ onSaved, editingRecord, onCancelEdit }: Inspect
       let photoDuringUrl: string | null = null;
       let photoFinalUrl: string | null = null;
 
-      // Preferência: montar a folha final (3 fotos em uma) e salvar no Drive (pasta fotosval).
+      // Preferência: montar a folha final (3 fotos em uma) e salvar no Drive.
       let savedComposite = false;
-      if (isOnline) await refreshGoogleSessionIfNeeded();
-      if (isOnline && hasGoogleDriveSession()) {
-        try {
-          const record = {
-            valve_code: valveCode,
-            inspection_date: new Date().toISOString(),
-            photo_initial_url: photoInitial,
-            photo_during_url: photoDuring,
-            photo_final_url: photoFinal,
-          };
-          const blob = await buildInspectionComposite(record);
-          const url = await uploadBlobToDrive(blob, compositeFilename(record), COMPOSITE_FOLDER_ID);
-          if (url) {
-            photoInitialUrl = photoDuringUrl = photoFinalUrl = url;
-            savedComposite = true;
-          }
-        } catch (err) {
-          console.warn("Falha ao enviar folha ao Drive:", err);
-          toast({
-            title: "Drive indisponível",
-            description: err instanceof Error ? err.message : "Salvando as fotos pelo método antigo.",
-            variant: "destructive",
-          });
-        }
+      if (isOnline) {
+        const record = {
+          valve_code: valveCode,
+          inspection_date: new Date().toISOString(),
+          photo_initial_url: photoInitial,
+          photo_during_url: photoDuring,
+          photo_final_url: photoFinal,
+        };
+        const blob = await buildInspectionComposite(record);
+        const url = await uploadBlobToDrive(blob, compositeFilename(record));
+        photoInitialUrl = photoDuringUrl = photoFinalUrl = url;
+        savedComposite = true;
       }
 
       if (!savedComposite) {
